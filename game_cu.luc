@@ -1,0 +1,137 @@
+module game_cu (
+    input clk,  // clock
+    input rst,  // reset
+    input increase_counter,
+    input decrease_timer,
+    input regfile_rd2[32], //direct reading of regfile data from rd2
+    
+    input e0_button,
+    input e1_button,
+    input e2_button,
+    input e3_button,
+    
+    output alufn[6],
+    output asel[3],
+    output bsel[3],
+    output alu_out_sel[2],
+    output regfile_wa[3],
+    output regfile_ra1[3],
+    output regfile_ra2[3],
+    output regfile_we,
+    output debug[4]
+) {
+    
+    enum GameStates {
+        GENERATE_SEQUENCE,
+        CHECK_STAGE4, 
+        BRANCH_CHECK4,
+        ASSIGN_TIMER4,
+        CHECK_STAGE8,
+        BRANCH_CHECK8,
+        ASSIGN_TIMER8,
+        PLAYER_WINS,
+        DISPLAY_SEQUENCE,
+        START_SET_TIMER,
+        IDLE,
+        CHECK_ELEMENT_0,
+        CHECK_ELEMENT_1,
+        CHECK_ELEMENT_2,
+        CHECK_ELEMENT_3,
+        BRANCH_ELEMENT_BUTTON,
+        INCREASE_SEQUENCE_POINTER_2,
+        CHECK_SEQUENCE_POINTER_LENGTH,
+        BRANCH_SEQEUNCE_POINTER,
+        INCREASE_SEQUENCE_LENGTH_2,
+
+    }
+    
+    dff game_fsm[$width(GameStates)](#INIT(GameStates.START_SET_TIMER), .clk(clk), .rst(rst))
+    
+    always {
+        
+        // standard setting unless otherwise overwritten by each case 
+        alufn = 0
+        asel = 0 
+        bsel = 0
+        csel = 0
+        regfile_we = 0
+        regfile_wa = d6 
+        regfile_ra1 = d0
+        regfile_ra2 = d0
+        alu_out_sel = 0
+        
+        debug = b0000
+        
+        
+        game_fsm.d = game_fsm.q
+        if (rst){
+            game_fsm.d = GameStates.GENERATE_SEQUENCE
+        }
+        else{
+            
+            case(game_fsm.q){
+                
+                GameStates.GENERATE_SEQUENCE:
+                    alufn = ?
+                    asel = b11
+                    bsel = b11
+                    csel = b1
+                    regfile_we = 1
+                    regfile_wa = 
+                    game_fsm.d = CHECK_STAGE4
+                
+                GameStates.CHECK_STAGE4:
+                    alufn = b110011                    //CMPEQ
+                    regfile_ra2 = d1
+                    asel = b01
+                    bsel = b00
+                    csel = b1
+                    regfile_wa = d5
+                    game_fsm.d = BRANCH_CHECK4
+                
+                GameStates.BRANCH_CHECK4:
+                    regfile_ra2 = d5
+                    asel = b11
+                    bsel = b11
+                    csel = b1
+                    regfile_we = 1
+                    regfile_wa = 
+                    game_fsm.d = 
+
+
+                
+                GameStates.IDLE:
+                    if (decrease_timer){
+                        game_fsm.d = GameStates.CHECK_GAMETIMER
+                    }
+                    else if (increase_counter && ~p1_button && ~p2_button){
+                        game_fsm.d = GameStates.INC_COUNTER
+                    }
+                    else if (p1_button && ~p2_button){
+                        game_fsm.d = GameStates.CHECK_P1BUTTONCOUNT
+                    }
+                    else if (p2_button && ~p1_button){
+                        game_fsm.d = GameStates.CHECK_P2BUTTONCOUNT
+                    }
+                    else{
+                        game_fsm.d = GameStates.IDLE
+                    }
+                
+                
+            }
+        }
+        
+    }
+}
+
+/*
+                    alufn = ?
+                    regfile_ra1 = 
+                    regfile_ra2 = 
+                    asel = b11
+                    bsel = b11
+                    csel = b1
+                    regfile_we = 1
+                    regfile_wa = 
+                    game_fsm.d = 
+*/
