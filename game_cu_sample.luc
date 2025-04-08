@@ -344,3 +344,17 @@ module game_cu (
         
     }
 }
+
+/*
+                    alufn = ?
+                    regfile_ra1 = 
+                    regfile_ra2 = 
+                    asel = b11
+                    bsel = b11
+                    csel = b1
+                    regfile_we = 1
+                    regfile_wa = 
+                    game_fsm.d = 
+
+                    
+*/

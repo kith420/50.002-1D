@@ -1,7 +1,6 @@
 module game_cu (
     input clk,  // clock
     input rst,  // reset
-    input increase_counter,
     input decrease_timer,
     input regfile_rd2[32], //direct reading of regfile data from rd2
     
@@ -33,6 +32,9 @@ module game_cu (
         DISPLAY_SEQUENCE,
         START_SET_TIMER,
         IDLE,
+        DECREASE_GAMETIMER,
+        CHECK_GAMETIMER,
+        BRANCH_GAMETIMER,
         CHECK_ELEMENT_0,
         CHECK_ELEMENT_1,
         CHECK_ELEMENT_2,
@@ -42,7 +44,7 @@ module game_cu (
         CHECK_SEQUENCE_POINTER_LENGTH,
         BRANCH_SEQEUNCE_POINTER,
         INCREASE_SEQUENCE_LENGTH_2,
-
+        INCREASE_STAGE_1
     }
     
     dff game_fsm[$width(GameStates)](#INIT(GameStates.START_SET_TIMER), .clk(clk), .rst(rst))
@@ -81,7 +83,7 @@ module game_cu (
                     game_fsm.d = CHECK_STAGE4
                 
                 GameStates.CHECK_STAGE4:
-                    alufn = b110011                    //CMPEQ
+                    alufn = f25             //CMPLT
                     regfile_ra2 = d1
                     asel = b01
                     bsel = b00
@@ -91,27 +93,185 @@ module game_cu (
                 
                 GameStates.BRANCH_CHECK4:
                     regfile_ra2 = d5
+                    //if rd2 == 1
+                    if (regfile_rd2[0]){
+                        game_fsm.d = ASSIGN_TIMER4
+                    }
+                    else{
+                        game_fsm.d = CHECK_STAGE8
+                    }
+
+                GameStates.ASSIGN_TIMER4:
+                    alufn = b100000 //ADD
+                    regfile_ra1 = d6
+                    asel = b00
+                    bsel = b01
+                    regfile_we = 1
+                    regfile_wa = d6
+                    game_fsm.d = DISPLAY_SEQUENCE
+
+                GameStates.CHECK_STAGE8:
+                    alufn = f26                    //CMPLE
+                    regfile_ra2 = d1
+                    asel = b01
+                    bsel = b00
+                    csel = b1
+                    regfile_wa = d5
+                    game_fsm.d = BRANCH_CHECK4
+                
+                GameStates.BRANCH_CHECK8:
+                    regfile_ra2 = d5
+                    //if rd2 == 1
+                    if (regfile_rd2[0]){
+                        game_fsm.d = ASSIGN_TIMER8
+                    }
+                    else{
+                        game_fsm.d = PLAYER_WINS
+                    }
+
+                GameStates.ASSIGN_TIMER8:
+                    alufn = b100000 //ADD
+                    regfile_ra1 = d6
+                    asel = b00
+                    bsel = b01
+                    regfile_we = 1
+                    regfile_wa = d6
+                    game_fsm.d = DISPLAY_SEQUENCE
+
+                GameStates.DECREASE_GAMETIMER:
+                    alufn = f01                         //SUB
+                    regfile_ra2 = d0
+                    asel = b01      // constant 1
+                    bsel = b00                             
+                    regfile_we = 1
+                    game_fsm.d = GameStates.IDLE
+                
+                GameStates.CHECK_GAMETIMER:
+                    alufn = b110011                         //CMPEQ
+                    regfile_ra2 = d6          //timer reg
+                    asel = b01
+                    bsel = b00                              //constant 0
+                    regfile_we = 1
+                    regfile_wa = d5                 //check reg
+                    game_fsm.d = GameStates.BRANCH_GAMETIMER
+                
+                GameStates.BRANCH_GAMETIMER:
+                    regfile_ra2 = d5          
+                    if (~regfile_rd2[0]){                 //if timer is not zero
+                        game_fsm.d = GameStates.DECREASE_GAMETIMER
+                    }
+                    else{
+                        game_fsm.d = GameStates.GAMEOVER
+                    }
+
+                GameStates.CHECK_ELEMENT_0:
+                    alufn = f24 //CMPEQ
+                    regfile_ra2 = d3
+                    asel = b01
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d5
+                    game_fsm.d = BRANCH_ELEMENT_BUTTON
+                
+                GameStates.CHECK_ELEMENT_1:
+                    alufn = f24 //CMPEQ
+                    regfile_ra2 = d3
+                    asel = b10
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d5
+                    game_fsm.d = BRANCH_ELEMENT_BUTTON
+
+                GameStates.CHECK_ELEMENT_2:
+                    alufn = f24 //CMPEQ
+                    regfile_ra1 = d3
                     asel = b11
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d5
+                    game_fsm.d = BRANCH_ELEMENT_BUTTON
+
+                GameStates.CHECK_ELEMENT_3:
+                    alufn = f24 //CMPEQ
+                    regfile_ra2 = d3
+                    asel = b00
                     bsel = b11
+                    csel = b0
+                    regfile_we = 1
+                    regfile_wa = d5
+                    game_fsm.d = BRANCH_ELEMENT_BUTTON
+
+                GameStates.BRANCH_ELEMENT_BUTTON:
+                    regfile_ra2 = d5
+                    if (regfile_rd2[0]){
+                        game_fsm.d = GameStates.INCREASE_SEQUENCE_POINTER_2
+                    }
+                    else{
+                        game_fsm.d = GameStates.GAMEOVER
+                    }
+
+                GameStates.INCREASE_SEQUENCE_POINTER_2:
+                    alufn = f20 // ADD
+                    regfile_ra2 = d4
+                    asel = b11
+                    bsel = b00
+                    regfile_we = 1
+                    game_fsm.d = CHECK_SEQUENCE_POINTER_LENGTH
+                
+                GameStates.CHECK_SEQUENCE_POINTER_LENGTH:
+                    alufn = f25 // CMPLT
+                    regfile_ra1 = d3
+                    regfile_ra2 = d4
+                    asel = b00
+                    bsel = b00
                     csel = b1
                     regfile_we = 1
-                    regfile_wa = 
-                    game_fsm.d = 
+                    regfile_wa = d5
+                    game_fsm.d = BRANCH_SEQEUNCE_POINTER
 
-
+                GameStates.BRANCH_SEQEUNCE_POINTER:
+                    regfile_ra2 = d5
+                    if (regfile_rd2[0]){
+                        game_fsm.d = GameStates.IDLE
+                    }
+                    else{
+                        game_fsm.d = INCREASE_SEQUENCE_LENGTH_2
+                    }
                 
+                GameStates.INCREASE_SEQUENCE_LENGTH_2:
+                    alufn = f20 // ADD
+                    regfile_ra2 = d4
+                    asel = b11
+                    bsel = b00
+                    regfile_we = 1
+                    game_fsm.d = INCREASE_STAGE_1
+
+                GameStates.INCREASE_STAGE_1:
+                    alufn = f20 // ADD
+                    regfile_ra2 = d1
+                    asel = b10
+                    bsel = b00
+                    regfile_we = 1
+                    game_fsm.d = CHECK_STAGE4
+
+                GameStates.GAMEOVER:
+                    game_fsm.d = GameStates.GAMEOVER
+
                 GameStates.IDLE:
                     if (decrease_timer){
                         game_fsm.d = GameStates.CHECK_GAMETIMER
                     }
-                    else if (increase_counter && ~p1_button && ~p2_button){
-                        game_fsm.d = GameStates.INC_COUNTER
+                    else if (e0_button && ~e1_button && ~e2_button && ~e3_button){
+                        game_fsm.d = GameStates.CHECK_ELEMENT_0
                     }
-                    else if (p1_button && ~p2_button){
-                        game_fsm.d = GameStates.CHECK_P1BUTTONCOUNT
+                    else if (e1_button && ~e2_button && ~e3_button){
+                        game_fsm.d = GameStates.CHECK_ELEMENT_1
                     }
-                    else if (p2_button && ~p1_button){
-                        game_fsm.d = GameStates.CHECK_P2BUTTONCOUNT
+                    else if (e2_button && ~e3_button){
+                        game_fsm.d = GameStates.CHECK_ELEMENT_2
+                    }
+                    else if (e3_button){
+                        game_fsm.d = GameStates.CHECK_ELEMENT_3
                     }
                     else{
                         game_fsm.d = GameStates.IDLE
