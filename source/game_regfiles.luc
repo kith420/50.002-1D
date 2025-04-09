@@ -1,9 +1,86 @@
 module game_regfiles (
-    input clk,  // clock
+input clk,  // clock
     input rst,  // reset
-    output out
+    input wa[3], // write address
+    input we, // write enable
+    input data[32], // data in
+    
+    input ra1[3], // read address port 1
+    input ra2[3], // read address port 2
+    output rd1[32], // read data port 1
+    output rd2[32], // read data port 1
+    
+    // states
+    output countdown_out[32],
+    output stage_out[32],
+    output sequence_out[32],
+    output temp_sequence_out[32],
+    output mod_sequence_out[32],
+    output check_out[32],
+    output timer_out[32],
+    output sequence_order_out[32]
 ) {
+    .clk(clk){
+        .rst(rst){
+            dff countdown[32](#INIT(0))
+            dff stage[32](#INIT(0))
+            dff sequence[32](#INIT(0))
+            dff temp_sequence[32](#INIT(0))
+            dff mod_sequence[32](#INIT(0))
+            dff check[32](#INIT(0))
+            dff timer[32](#INIT(0))
+            dff sequence_order[32](#INIT(0))
+        }
+    }
     always {
-        out = 0
+        //write port
+        if (we){
+            case(wa){
+                d0 : countdown.d = data
+                d1 : stage.d = data
+                d2 : sequence.d = data
+                d3 : temp_sequence.d = data
+                d4 : mod_sequence.d = data
+                d5 : check.d = data
+                d6 : timer.d = data
+                d7 : sequence_order.d = data
+            }
+        }
+        
+        
+        //read port a
+        case(ra1){
+            d0 : rd1 = countdown.q
+            d1 : rd1 = stage.q
+            d2 : rd1 = sequence.q
+            d3 : rd1 = temp_sequence.q
+            d4 : rd1 = mod_sequence.q
+            d5 : rd1 = check.q
+            d6 : rd1 = timer.q
+            d7 : rd1 = sequence_order.q
+            default : rd1 = 0
+        }
+        
+        //read port b
+        case(ra2){
+            d0 : rd2 = countdown.q
+            d1 : rd2 = stage.q
+            d2 : rd2 = sequence.q
+            d3 : rd2 = temp_sequence.q
+            d4 : rd2 = mod_sequence.q
+            d5 : rd2 = check.q
+            d6 : rd2 = timer.q
+            d7 : rd2 = sequence_order.q
+            default : rd2 = 0
+        }
+
+        countdown_out = countdown.q
+        stage_out = stage.q
+        sequence_out = sequence.q
+        temp_sequence_out = temp_sequence.q
+        mod_sequence_out = mod_sequence.q
+        check_out = check.q
+        timer_out = timer.q
+        sequence_order_out = sequence_order.q
     }
 }
