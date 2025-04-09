@@ -1,0 +1,40 @@
+module x_bit_left_shifter #(
+  // parameter declaration, to be set during module instantiation
+  // default value given is 8
+  SHIFT = 8 : SHIFT > -1 & SHIFT < 32
+  )(
+    input a[32],
+    input shift,
+    input pad,
+    output out[32]
+  ) {
+  
+  // module declarations
+  // instantiate mux_2 (32 of them)
+    mux_2 mux_2[32]
+  // other useful intermediary signals, e.g: shifted_bits[32] 
+    sig shifted_bits[32]
+  
+  always {  
+        
+    repeat (i, 32) {
+      if (i >= SHIFT) {
+        shifted_bits[i] = a[i-SHIFT]; // Shift left by SHIFT
+      } else {
+        shifted_bits[i] = pad; // Fill with padding bit
+      }
+    }
+        
+    // Pass the values to the mux
+    repeat (i, 32) {
+      mux_2.in[i][0] = a[i];                // Original input
+      mux_2.in[i][1] = shifted_bits[i];     // Shifted input
+      mux_2.s0[i] = shift;                  // Select based on shift signal
+    }     
+           
+    // Assign outputs
+    repeat (i, 32) {
+      out[i] = mux_2.out[i];
+    }
+  }
+}

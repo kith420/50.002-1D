@@ -3,67 +3,85 @@ module alu (
     input b[32],
     input alufn[6],
     output out[32],
-    output z,
-    output v,
-    output n
+    output z, //
+    output v, // Overflow
+    output n // Negative
 ) {
+    //mux_2 mux_2[32]
+    mux_4 mux_4[32]
+    mux_4 mux_4_1[32]
     
-    sig out_sig[32]
+    adder adder(#SIZE(32))
+    compare compare()
+    boolean boolean(#SIZE(32));
+    shifter shifter() 
+    multiplier multiplier()
+    divider divider()
+    modfour modfour()
     
+    sig cmp_extended[32];
     
     always {
+        // Adder
+        adder.a = a
+        adder.b = b
+        adder.alufn_signal = alufn
         
-        z = 0
-        v = 0
-        n = 0
+        z = adder.z
+        v = adder.v
+        n = adder.n
         
-        case(alufn){
-            6h00: // ADD
-                out_sig = a + b
-                z = ~|out_sig
-                v = (a[31] & (b[31] ^ alufn[0]) & !out_sig[31]) | (!a[31] & !(b[31] ^ alufn[0]) & out_sig[31]) 
-                n = out_sig[31]
-            6h01: // SUB
-                out_sig = a - b
-                z = ~|out_sig
-                v = (a[31] & (b[31] ^ alufn[0]) & !out_sig[31]) | (!a[31] & !(b[31] ^ alufn[0]) & out_sig[31]) 
-                n = out_sig[31]   
-            6h02: // MUL
-                out_sig = a * b 
-            6h18: // BITWISE AND
-                out_sig = a & b 
-            6h1E: // BITWISE OR 
-                out_sig = a | b 
-            6h16: // BITWISE XOR
-                out_sig = a ^ b 
-            6h1A: // "A"
-                out_sig = a
-            6h20: // SHL 
-                out_sig = a << b[4:0]
-            6h21: // SHR 
-                out_sig = a >> b[4:0]
-            6h23: // SRA 
-                out_sig = a >>> b[4:0]
-            6h33: // CMPEQ 
-                out_sig = a == b 
-            6h35: // CMPLT 
-                out_sig = a < b 
-            6h37: // CMPLE
-                out_sig = a <= b
-            6h03: // GET
-                out_sig = a - ((a >> 2) << 2)
-            
-            
-            default:
-                out_sig = 0
-           
-            
-        }
+        // Multiplier
+        multiplier.a = a
+        multiplier.b = b
         
+        // Boolean
+        boolean.a = a
+        boolean.b = b
+        boolean.alufn_signal = alufn
+        
+        // shifter
+        shifter.a = a
+        shifter.b = b
+        shifter.alufn = alufn
+        
+        // compare
+        compare.z = adder.z
+        compare.v = adder.v
+        compare.n =  adder.n
+        compare.alufn = alufn
+        
+        cmp_extended = c{31x{b0}, compare.cmp};
+        
+        divider.a = a
+        divider.b = b
+        
+        modfour.a = a
+        modfour.b = b
+                
+        repeat (i, 32) {
+            
+            mux_4_1.s0[i] = alufn[1]
+            mux_4_1.s1[i] = alufn[2]
+            
+            mux_4_1.in[i][0] = adder.out[i]
+            mux_4_1.in[i][1] = multiplier.mul[i]
+            mux_4_1.in[i][2] = divider.out[i]
+            mux_4_1.in[i][3] = modfour.out[i]
 
-        out = out_sig
-        
-        
-        
+            //mux_2.in[i][0] = adder.out[i]
+            //mux_2.in[i][1] = multiplier.mul[i]
+            //mux_2.s0[i] = alufn[1]
+                
+            mux_4.in[i][0] = mux_4_1.out[i]
+            mux_4.in[i][1] = boolean.bool[i]
+            mux_4.in[i][2] = shifter.shift[i]
+            mux_4.in[i][3] = cmp_extended[i]
+                
+            mux_4.s0[i] = alufn[4]
+            mux_4.s1[i] = alufn[5]
+                
+            out[i] = mux_4.out[i]
+        }
     }
 }

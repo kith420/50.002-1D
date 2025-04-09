@@ -1,0 +1,18 @@
+module modulo (
+    input a[32],  // dividend
+    input b[32],  // divisor
+    output out[32] // remainder (a mod b)
+) {
+    sig quotient[32]; // intermediate result for a/b
+    
+    always {
+        // Handle division by zero
+        if (b == 0) {
+            quotient = 0
+            out = 0; // or another appropriate value for division by zero
+        } else {
+            quotient = a / b;     // Calculate integer division
+            out = a - (quotient * b); // Calculate remainder
+        }
+    }
+}
