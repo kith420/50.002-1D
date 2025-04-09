@@ -1,0 +1,9 @@
+module game_datapath (
+    input clk,  // clock
+    input rst,  // reset
+    output out
+) {
+    always {
+        out = 0
+    }
+}
