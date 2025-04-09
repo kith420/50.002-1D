@@ -1,0 +1,49 @@
+module shifter (
+    input a[32],
+    input b[5],
+    input alufn[6],
+    output shift[32]
+) {
+
+    mux_2 mux_a[32]
+    mux_2 mux_shl[32]
+    mux_2 mux_gnd
+    bit_reverse bit_reverse_start(#SIZE(32))
+    bit_reverse bit_reverse_end(#SIZE(32))
+    x_bit_left_shifter x_bit_left_shifter[5](#SHIFT({5b10000, 5b01000, 5b00100, 5b00010, 5b00001}))
+    
+    
+    always {
+        // implement shifter unit logic here
+        shift = 0
+        bit_reverse_start.in = a
+        
+        repeat(i, 32){
+            mux_a.s0[i] = alufn[0]
+            mux_a.in[i] = c{bit_reverse_start.reversed[i], a[i]}
+        }
+        
+        mux_gnd.s0 = alufn[1]
+        mux_gnd.in = c{1b0 , a[31]}
+        
+        repeat(i,5){
+            if (i == 0){
+                x_bit_left_shifter.a[i] = mux_a.out
+            }else{
+                x_bit_left_shifter.a[i] = x_bit_left_shifter.out[i-1]
+            }
+            
+            x_bit_left_shifter.shift[i] = b[i] // selector that determines if shift or not
+            x_bit_left_shifter.pad[i] = mux_gnd.out
+        }
+        
+        bit_reverse_end.in = x_bit_left_shifter.out[4]
+        repeat(i, 32) {
+            mux_shl.s0[i] = alufn[0]
+            mux_shl.in[i][0] = x_bit_left_shifter.out[4][i]
+            mux_shl.in[i][1] = bit_reverse_end.reversed[i]
+        }
+        
+        shift = mux_shl.out       
+    } 
+}

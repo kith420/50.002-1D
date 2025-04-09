@@ -1,0 +1,39 @@
+module boolean #(
+    SIZE = 32 : SIZE > 0
+)(
+    input a[SIZE],
+    input b[SIZE],
+    input alufn_signal[6],
+    output bool[SIZE]
+) {
+    mux_4 mux_4_32[32];
+    
+    always {
+        // create 32 copies of ALUFN signal as input to each mux_4 unit 
+        // the double curly brackets are intentional because
+        // we are creating 2D array: 32 by 4 bits
+        // mux_4_32.in = 32x{{alufn_signal[3:0]}}; 
+        
+        // the rest of boolean.luc body 
+
+        // implement boolean unit logic here
+        //bool = mux_4_32.out
+        
+        repeat (i, 32){
+            // Connect selectors
+            mux_4_32.s0[i] = a[i];
+            mux_4_32.s1[i] = b[i];
+            
+            // Connect 4 boolean operations as inputs
+            mux_4_32.in[i][0] = alufn_signal[0];     // AND
+            mux_4_32.in[i][1] = alufn_signal[1];     // OR
+            mux_4_32.in[i][2] = alufn_signal[2];     // XOR
+            mux_4_32.in[i][3] = alufn_signal[3];            // A
+            
+            // Connect output
+            bool[i] = mux_4_32.out[i];
+        }
+        
+    }
+    
+}
