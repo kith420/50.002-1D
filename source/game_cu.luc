@@ -9,10 +9,10 @@ module game_cu (
     input e2_button,
     input e3_button,
     
+    output io_led[3][8],
     output alufn[6],
-    output asel[3],
-    output bsel[3],
-    output csel[3],
+    output asel[4],
+    output bsel[7],
     output alu_out_sel[2],
     output regfile_wa[3],
     output regfile_ra1[3],
@@ -30,7 +30,16 @@ module game_cu (
         BRANCH_CHECK8,
         ASSIGN_TIMER8,
         PLAYER_WINS,
-        DISPLAY_SEQUENCE,
+
+        DS_ASSIGN_TEMPR,
+        DS_ASSIGN_E_R4,
+        DS_ACTIVATE_LIGHT,
+        DS_DEACTIVATE_LIGHT,
+        DS_SHR_TEMPR,
+        DS_INCREASE_SEQ_ORDER,
+        DS_CHECK_SEQ_ORDER,
+        DS_BRANCH_SEQ_CHECK,
+
         START_SET_TIMER,
         IDLE,
         GAMEOVER,
@@ -49,8 +58,7 @@ module game_cu (
         INCREASE_STAGE_1
     }
     
-    dff game_fsm[$width(GameStates)](#INIT(GameStates.START_SET_TIMER), .clk(clk), .rst(rst))
-    
+     
     always {
         
         // standard setting unless otherwise overwritten by each case 
@@ -63,6 +71,7 @@ module game_cu (
         regfile_ra1 = d0
         regfile_ra2 = d0
         alu_out_sel = 0
+        io_led = 3x{{8h00}};
         
         debug = b0000
         
@@ -85,11 +94,10 @@ module game_cu (
                     game_fsm.d = GameStates.CHECK_STAGE4
                 
                 GameStates.CHECK_STAGE4:
-                    alufn = h25             //CMPLT
-                    regfile_ra2 = d1
-                    asel = b01
-                    bsel = b00
-                    csel = b1
+                    alufn = h33             //CMPEQ
+                    regfile_ra1 = d1
+                    asel = b00
+                    bsel = b01
                     regfile_wa = d5
                     game_fsm.d = GameStates.BRANCH_CHECK4
                 
@@ -104,7 +112,7 @@ module game_cu (
                     }
 
                 GameStates.ASSIGN_TIMER4:
-                    alufn = b100000 //ADD
+                    alufn = h00 //ADD //Add should be b000000
                     regfile_ra1 = d6
                     asel = b00
                     bsel = b01
@@ -113,7 +121,7 @@ module game_cu (
                     game_fsm.d = GameStates.DISPLAY_SEQUENCE
 
                 GameStates.CHECK_STAGE8:
-                    alufn = h26                    //CMPLE
+                    alufn = h37                    //CMPLE
                     regfile_ra2 = d1
                     asel = b01
                     bsel = b00
@@ -132,13 +140,83 @@ module game_cu (
                     }
 
                 GameStates.ASSIGN_TIMER8:
-                    alufn = b100000 //ADD
+                    alufn = h00 //ADD
                     regfile_ra1 = d6
                     asel = b00
                     bsel = b01
                     regfile_we = 1
                     regfile_wa = d6
                     game_fsm.d = GameStates.DISPLAY_SEQUENCE
+
+                GameStates.DS_ASSIGN_TEMPR:
+                    alufn = h1A // LDR "A" 1A
+                    regfile_ra1 = d2
+                    asel = b00
+                    bsel = --
+                    regfile_we = 1
+                    regfile_wa = d3
+                    game_fsm.d = GameStates.DS_ASSIGN_E_R4
+
+                GameStates.DS_ASSIGN_E_R4:
+                    alufn = h06
+                    regfile_ra1 = d3
+                    asel = b00
+                    bsel = --
+                    csel = b1
+                    regfile_we = 1
+                    regfile_wa = d4
+                    game_fsm.d = GameStates.DS_ACTIVATE_LIGHT
+                
+                GameStates.DS_ACTIVATE_LIGHT0:
+                // change to compare dff d4(?) == 0
+                // 
+                    alufn = h06
+                    regfile_ra1 = d3
+                    asel = b00
+                    bsel = --
+                    csel = b1
+                    regfile_we = 1
+                    regfile_wa = d4
+                    game_fsm.d = GameStates.DS_ACTIVATE_LIGHT2
+                
+                GameStates.DS_DEACTIVATE_LIGHT:
+                    // wait also 
+
+                GameStates.DS_SHR_TEMPR:
+                    alufn = h2D // SHR
+                    regfile_ra1 = d3
+                    asel = b00
+                    bsel = b110
+                    csel = b1
+                    regfile_we = 1
+                    game_fsm.d = GameStates.DS_INCREASE_SEQ_ORDER
+
+                GameStates.DS_INCREASE_SEQ_ORDER:
+                    alfun = h20 // ADD
+                    regfile_ra2 = d4
+                    asel = b11
+                    bsel = b00
+                    regfile_we = 1
+                    game_fsm.d = GameStates.DS_CHECK_SEQ_ORDER
+                
+                GameStates.DS_CHECK_SEQ_ORDER:
+                    alufn = h25 // CMPLT
+                    regfile_ra1 = d7
+                    regfile_ra2 = d1
+                    asel = b00
+                    bsel = b00
+                    regfile_we = 0
+                    regfile_wa = d5
+                    game_fsm.d = GameStates.DS_BRANCH_SEQ_CHECK
+                
+                GameStates.DS_BRANCH_SEQ_CHECK:
+                    regfile_ra2 = d5
+                    if (regfile_rd2[0]){
+                        game_fsm.d = GameStates.DS_ASSIGN_E_R4
+                    }
+                    else{
+                        game_fsm.d = 
+                    }
 
                 GameStates.DECREASE_GAMETIMER:
                     alufn = h01                         //SUB
