@@ -1,48 +1,78 @@
 module alchitry_top (
     input clk,              // 100MHz clock
     input rst_n,            // reset button (active low)
-    output led[8],          // 8 user controllable LEDs
     input usb_rx,           // USB->Serial input
     output usb_tx,          // USB->Serial output
+    
     output io_led[3][8],    // LEDs on IO Shield
     output io_segment[8],   // 7-segment LEDs on IO Shield
     output io_select[4],    // Digit select on IO Shield
-    input io_button[5],     // 5 buttons on IO Shield
-    input io_dip[3][8]      // DIP switches on IO Shield
+    input io_button[5]     // 5 buttons on IO Shield
 ) {
-
+    
     sig rst                 // reset signal
-
+    const CLK_FREQ = $is_sim() ? 1000 : 100000000 // put 1000 for sim, 100M for hardware 
+    const SEVEN_SEG_DIV = $is_sim() ? 3 : 16 // put 3 for sim, 16 for hardware
+    const SLOW_CLOCK_DIV = $is_sim() ? 9 : 26 // put 9 for sim, 26 for hardware 
+    const FAST_CLOCK_DIV = $is_sim() ? 7 : 21 // put 7 for sim, 21 for hardware 
+    
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
-
-        edge_detector edge_detector(#RISE(1), #FALL(0))
-
+                
+        edge_detector edge_dt_btn_up (#RISE(1), #FALL(0))
+        edge_detector edge_dt_btn_down(#RISE(1), #FALL(0))
+        edge_detector edge_dt_btn_left(#RISE(1), #FALL(0))
+        edge_detector edge_dt_btn_right(#RISE(1), #FALL(0))
+        
+        button_conditioner btn_cond_up(#CLK_FREQ(CLK_FREQ))
+        button_conditioner btn_cond_down(#CLK_FREQ(CLK_FREQ)) 
+        button_conditioner btn_cond_left(#CLK_FREQ(CLK_FREQ)) 
+        button_conditioner btn_cond_right(#CLK_FREQ(CLK_FREQ)) 
+        
         .rst(rst) {
-            // Reduce DIV values for simulation so it doesn't take forever
-            multi_seven_seg seg (#DIV($is_sim() ? 1 : 16), #DIGITS(4))
-            multi_decimal_counter dec_ctr (#DIGITS(4))
-            counter ctr (#SIZE(1), #DIV($is_sim() ? 8 : 24))
+            multi_seven_seg seg(#DIV(SEVEN_SEG_DIV))
+            game_datapath game_datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV))
         }
     }
-
+    
+    bin_to_dec bin_to_dec_converter(#DIGITS(4))
+    
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
         rst = reset_cond.out    // conditioned reset
-
-        led = c{3b0, io_button} // connect buttons to LEDs
-
-        usb_tx = usb_rx         // loop serial port
-
-        edge_detector.in = ctr.value
-        dec_ctr.inc = edge_detector.out
-        seg.values = dec_ctr.digits
-
-        io_segment = ~seg.seg // connect segments to the driver
-        io_select = ~seg.sel  // connect digit select to the driver
-
-        io_led = io_dip       // connect the DIP switches to the LEDs
+        usb_tx = usb_rx         // loop serial port    
+        
+        io_led = 3x{{8h00}}    // turn LEDs off
+        io_segment = 8hff          // turn segments off
+        io_select = 4hf           // select no digits
+        
+        // CHANGE THE IO_BUTTON
+        btn_cond_up.in = io_button[0] //to reduce the bouncing effects of your button 
+        btn_cond_down.in = io_button[2]
+        btn_cond_left.in = io_button[4]
+        btn_cond_right.in = io_button[3]
+        
+        edge_dt_btn_up.in = btn_cond_up.out //get the edge of button press
+        edge_dt_btn_down.in = btn_cond_down.out
+        edge_dt_btn_left.in = btn_cond_left.out
+        edge_dt_btn_right.in = btn_cond_right.out
+        
+        game_datapath.button_up = edge_dt_btn_up.out
+        game_datapath.button_down = edge_dt_btn_down.out
+        game_datapath.button_left = edge_dt_btn_left.out
+        game_datapath.button_right = edge_dt_btn_right.out
+        
+        //update 7segments. 
+        // THIS IS NOT COMPLETE
+        seg.values = 4x{{4b0}} // default to all 0 first
+        bin_to_dec_converter.value = game_datapath.countdown_out
+        seg.values = bin_to_dec_converter.digits
+        
+        
+        io_segment = ~seg.seg
+        io_select = ~seg.sel
+        
     }
 }

@@ -1,9 +1,90 @@
-module game_datapath (
+module game_datapath#(
+    SLOW_CLOCK_DIV ~ 26 : SLOW_CLOCK_DIV > 0
+) (
+    input button_up,
+    input button_down,
+    input button_left,
+    input button_right,    
+    
     input clk,  // clock
     input rst,  // reset
-    output out
+    
+    // display on 7 seg
+    output countdown_out[32],
+    output stage_out[32]    
 ) {
-    always {
-        out = 0
+    //temp variables
+    sig input_alu_a[32]
+    sig input_alu_b[32]
+    
+    alu alu
+    
+    .clk(clk){
+        counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
+        
+        // edge detector declaration & connection with counters
+        edge_detector edge_detector_game_timer(#RISE(1), #FALL(0), .in(game_timer_clock.value))
+        
+        game_cu game_cu(
+            .e0_button(button_up),
+            .e1_button(button_left),
+            .e2_button(button_down),
+            .e3_button(button_right),
+            .rst(rst),
+            .decrease_timer(edge_detector_game_timer.out)
+        )
+        
+        game_regfiles game_regfiles(
+            .we(game_cu.regfile_we), 
+            .wa(game_cu.regfile_wa), 
+            .ra1(game_cu.regfile_ra1), 
+            .ra2(game_cu.regfile_ra2),
+            .rst(rst)
+        )
     }
+    
+    always {
+        
+        // bootstrap rd2 output to CU for convenient branching conditions
+        game_cu.regfile_rd2 = game_regfiles.rd2
+        
+        // asel mux
+        case(game_cu.asel){
+            b00  : input_alu_a = game_regfiles.rd1
+            b01  : input_alu_a = 0
+            b10 : input_alu_a = 1
+            b11  : input_alu_a = 2
+            default : 
+                input_alu_a = 0
+        }
+        
+        // bsel mux
+        case(game_cu.bsel){
+            b00 : input_alu_b = game_regfiles.rd2
+            b01 : input_alu_b = 4
+            b10 : input_alu_b = 8
+            b11 : input_alu_b = 3
+            b101 : input_alu_b = 10
+            default:
+                input_alu_b = 0
+        }
+        
+        // alu
+        alu.a = input_alu_a
+        alu.b = input_alu_b
+        alu.alufn = game_cu.alufn
+        
+        // wdsel mux
+        case (game_cu.alu_out_sel){
+            b00 : game_regfiles.data = alu.out
+            b01 : game_regfiles.data = 0
+            default : 
+                game_regfiles.data = alu.out
+        }
+        
+  
+        // display on 7 seg
+        countdown_out = game_regfiles.countdown_out
+        stage_out = game_regfiles.stage_out
+        }
 }
