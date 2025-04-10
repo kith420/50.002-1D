@@ -9,7 +9,6 @@ module game_cu (
     input e2_button,
     input e3_button,
     
-    output io_led[3][8],
     output alufn[6],
     output asel[4],
     output bsel[8],
@@ -85,7 +84,6 @@ module game_cu (
         regfile_ra1 = d0
         regfile_ra2 = d0
         alu_out_sel = 0
-        io_led = 3x{{8h00}};
         
         debug = b0000
         
