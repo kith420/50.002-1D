@@ -68,17 +68,17 @@ module game_cu (
         FR_INCREASE_SCORE_1,
         FR_INCREASE_STAGE_1
     }
+       
+    dff game_fsm[$width(GameStates)](#INIT(GameStates.START_SET_TIMER), .clk(clk), .rst(rst))
     
-     
     always {
         
         // standard setting unless otherwise overwritten by each case 
         alufn = 0
         asel = 0 
         bsel = 0
-        csel = 0
         regfile_we = 0
-        regfile_wa = [d6] 
+        regfile_wa = d6 
         regfile_ra1 = d0
         regfile_ra2 = d0
         alu_out_sel = 0
@@ -193,7 +193,7 @@ module game_cu (
                     game_fsm.d = GameStates.DS_INCREASE_SEQ_ORDER
 
                 GameStates.DS_INCREASE_SEQ_ORDER:
-                    alfun = h00     // ADD
+                    alufn = h00     // ADD
                     regfile_ra1 = d7    // seq order reg
                     asel = b00
                     bsel = b10
@@ -329,7 +329,7 @@ module game_cu (
                     }
 
                 GameStates.PG_INCREASE_SEQ_ORDER:
-                    alfun = h00     // ADD
+                    alufn = h00     // ADD
                     regfile_ra1 = d7    // seq order reg
                     asel = b00
                     bsel = b10

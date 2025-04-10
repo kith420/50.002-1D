@@ -66,7 +66,7 @@ module game_datapath#(
             b11 : input_alu_b = 2
             b100 : input_alu_b = 3
             b101 : input_alu_b = 4
-            b110 : input_au_b = 8
+            b110 : input_alu_b = 8
             b111 : input_alu_b = 16
             default:
                 input_alu_b = 0
