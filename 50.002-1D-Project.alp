@@ -196,6 +196,12 @@
                     "type": "DiskFile",
                     "path": "source/adder.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/random_number_generator.luc"
+                }
             }
         ],
         "constraintFiles": [
