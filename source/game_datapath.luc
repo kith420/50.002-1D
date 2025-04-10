@@ -81,6 +81,7 @@ module game_datapath#(
         case (game_cu.alu_out_sel){
             b00 : game_regfiles.data = alu.out
             b01 : game_regfiles.data = 0
+            b10 : game_regfiles.data = 1
             default : 
                 game_regfiles.data = alu.out
         }
