@@ -23,6 +23,9 @@ module game_cu (
     
     enum GameStates {
         GENERATE_SEQUENCE,
+        SG_ASSIGN_STAGE_1,
+        SG_ASSIGN_TIMER_4,
+
         CHECK_STAGE4, 
         BRANCH_CHECK4,
         ASSIGN_TIMER4,
@@ -101,8 +104,23 @@ module game_cu (
                     bsel = b11
                     regfile_we = 1
                     //regfile_wa = 
-                    game_fsm.d = GameStates.CHECK_STAGE4
+                    game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
                 
+                GameStates.SG_ASSIGN_STAGE_1:
+                    regfile_we = 1
+                    regfile_wa = d1     // stage reg
+                    alu_out_sel = b10
+                    game_fsm.d = GameStates.SG_ASSIGN_TIMER_4
+
+                GameStates.SG_ASSIGN_TIMER_4:
+                    alufn = h1A // LDR "A" 1A
+                    regfile_ra1 = d6    // timer reg
+                    asel = b00
+                    bsel = b101
+                    regfile_we = 1
+                    regfile_wa = d6     // timer reg
+                    game_fsm.d = GameStates.CHECK_STAGE4
+
                 GameStates.CHECK_STAGE4:
                     alufn = h33             //CMPEQ
                     regfile_ra1 = d1    // stage reg
@@ -237,6 +255,13 @@ module game_cu (
                     game_fsm.d = GameStates.START_SET_TIMER
 
                 GameStates.START_SET_TIMER:
+                    alufn = h1A // LDR "A" 1A
+                    regfile_ra1 = d0    // countdown reg
+                    regfile_ra2 = d6    // timer reg
+                    asel = b00
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d0     // countdown reg
                     game_fsm.d = GameStates.PG_ASSIGN_E_R4
 
                 GameStates.DECREASE_GAMETIMER:
@@ -250,7 +275,7 @@ module game_cu (
                 
                 GameStates.CHECK_GAMETIMER:
                     alufn = h33                         //CMPEQ
-                    regfile_ra2 = d0          //timer reg
+                    regfile_ra2 = d0          // countdown reg
                     asel = b01
                     bsel = b00                              //constant 0
                     regfile_we = 1
