@@ -82,6 +82,7 @@ module game_datapath#(
             b00 : game_regfiles.data = alu.out
             b01 : game_regfiles.data = 0
             b10 : game_regfiles.data = 1
+            b11 : game_regfiles.data = b1110110100101101
             default : 
                 game_regfiles.data = alu.out
         }

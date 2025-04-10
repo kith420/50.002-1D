@@ -99,11 +99,9 @@ module game_cu (
             case(game_fsm.q){
                 
                 GameStates.GENERATE_SEQUENCE: //to fix later
-                    //alufn = ?
-                    asel = b11
-                    bsel = b11
                     regfile_we = 1
-                    //regfile_wa = 
+                    regfile_wa = d2     // sequence reg
+                    alu_out_sel = b11
                     game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
                 
                 GameStates.SG_ASSIGN_STAGE_1:
