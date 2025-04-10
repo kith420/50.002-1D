@@ -106,19 +106,19 @@
                     "type": "DiskFile",
                     "path": "source/alu_sample.luc"
                 }
-            },        
+            },
             {
                 "file": {
                     "type": "Component",
                     "path": "Conditioning/button_conditioner.luc"
                 }
             },
-             {
+            {
                 "file": {
                     "type": "DiskFile",
                     "path": "source/bit_reverse.luc"
                 }
-            },           
+            },
             {
                 "file": {
                     "type": "Component",

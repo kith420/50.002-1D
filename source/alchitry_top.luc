@@ -70,7 +70,8 @@ module alchitry_top (
         bin_to_dec_converter.value = game_datapath.countdown_out
         seg.values = bin_to_dec_converter.digits
         
-        
+        // assign ioled to button light
+                
         io_segment = ~seg.seg
         io_select = ~seg.sel
         
