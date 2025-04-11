@@ -99,7 +99,7 @@ module game_cu (
                 GameStates.GENERATE_SEQUENCE: //to fix later
                     regfile_we = 1
                     regfile_wa = d2     // sequence reg
-                    alu_out_sel = b11
+                    alu_out_sel = b11 
                     game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
                 
                 GameStates.SG_ASSIGN_STAGE_1:

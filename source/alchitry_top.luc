@@ -66,13 +66,14 @@ module alchitry_top (
         
         // Display sequence light on io_led
         io_led[0] = game_datapath.current_seq
-        
+
         //update 7segments. 
         // THIS IS NOT COMPLETE
         seg.values = 4x{{4b0}} // default to all 0 first
         bin_to_dec_converter.value = game_datapath.countdown_out
         seg.values = bin_to_dec_converter.digits
-        // assign ioled to button light  
+        
+        // assign ioled to button light 
         io_segment = ~seg.seg
         io_select = ~seg.sel
         

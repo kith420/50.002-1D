@@ -94,6 +94,6 @@ module game_datapath#(
         // display on 7 seg
         countdown_out = game_regfiles.countdown_out
         stage_out = game_regfiles.stage_out
-        current_seq = game_regfiles.mod_sequence_out
+        current_seq = game_regfiles.sequence_order_out
         }
 }

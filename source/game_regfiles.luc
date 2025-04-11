@@ -93,6 +93,6 @@ module game_regfiles (
         // mod_sequence_out = mod_sequence.q
         // check_out = check.q
         // timer_out = timer.q
-        sequence_order_out = sequence_order.q
+        sequence_order_out = light.q
     }
 }
