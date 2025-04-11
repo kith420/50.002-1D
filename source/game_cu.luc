@@ -10,12 +10,12 @@ module game_cu (
     input e3_button,
     
     output alufn[6],
-    output asel[4],
-    output bsel[8],
+    output asel[3],
+    output bsel[3],
     output alu_out_sel[2],
-    output regfile_wa[3],
-    output regfile_ra1[3],
-    output regfile_ra2[3],
+    output regfile_wa[4],
+    output regfile_ra1[4],
+    output regfile_ra2[4],
     output regfile_we,
     output debug[4]
 ) {
