@@ -18,8 +18,8 @@ module game_datapath#(
     output current_seq[4],
     
     // debug counter
-    output debug_out,
-    output debug_wa
+    output debug_seg[32],
+    output debug_ioled[8]
 ) {
     //temp variables
     sig input_alu_a[32]
@@ -89,7 +89,7 @@ module game_datapath#(
         // wdsel mux
         case (game_cu.alu_out_sel){
             b00 : game_regfiles.data = alu.out
-            b01 : game_regfiles.data = 0
+            b01 : game_regfiles.data = 4
             b10 : game_regfiles.data = 1
             b11 : game_regfiles.data = b1110110100101101
             default : 
@@ -100,8 +100,11 @@ module game_datapath#(
         // display on 7 seg
         countdown_out = game_regfiles.countdown_out
         stage_out = game_regfiles.stage_out
-        current_seq = game_regfiles.sequence_order_out
-        debug_out = game_cu.debug_counter
-        debug_wa = game_cu.regfile_wa
+        current_seq = game_regfiles.light_out
+        
+        // debug
+        debug_seg = game_cu.debug_counter
+        //debug_seg = game_regfiles.light_out
+        debug_ioled = game_regfiles.light_out
         }
 }

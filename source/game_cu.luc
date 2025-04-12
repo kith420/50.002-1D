@@ -19,7 +19,8 @@ module game_cu (
     output regfile_ra2[4],
     output regfile_we,
     
-    output debug_counter
+    // debug
+    output debug_counter[32]
 ) {
     
     enum GameStates {
@@ -73,10 +74,11 @@ module game_cu (
     }
     
     dff game_fsm[$width(GameStates)](#INIT(GameStates.IDLE), .clk(clk), .rst(rst))
-    dff counter[32](#INIT(GameStates.IDLE), .clk(clk), .rst(rst))
-    
+
     always {
-        debug_counter = counter.q
+        // debug
+        debug_counter = 0
+                
         // standard setting unless otherwise overwritten by each case 
         alufn = 0
         asel = 0 
@@ -87,401 +89,371 @@ module game_cu (
         regfile_ra2 = d0
         alu_out_sel = 0      
         
-        game_fsm.d = game_fsm.q            
-        case(game_fsm.q){
-            GameStates.GENERATE_SEQUENCE: //to fix later, used to generate the sequence
-                regfile_we = 1
-                regfile_wa = d2     // sequence reg
-                alu_out_sel = b11 
-                counter.d = counter.q + 1
-                game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
-                // game_fsm.d = GameStates.IDLE                
-            
-            GameStates.SG_ASSIGN_STAGE_1: // give the stage dff a value of 1
-                regfile_we = 1
-                regfile_wa = d1     // stage reg
-                alu_out_sel = b10
-                counter.d = counter.q + 1
-                game_fsm.d = GameStates.IDLE
-                // game_fsm.d = GameStates.SG_ASSIGN_TIMER_4
-            
-            GameStates.SG_ASSIGN_TIMER_4: // give the timer dff a value of 4
-                alufn = h1A // LDR "A" 1A
-                regfile_ra1 = d6    // timer reg
-                asel = b00
-                bsel = b101
-                regfile_we = 1
-                regfile_wa = d6     // timer reg
-                game_fsm.d = GameStates.CHECK_STAGE4
-                counter.d = counter.q + 1
-            
-            GameStates.CHECK_STAGE4: // check if your stage is equal to 4
-                alufn = h33             //CMPEQ
-                regfile_ra1 = d1    // stage reg
-                asel = b00
-                bsel = b101
-                regfile_we = 1
-                regfile_wa = d5     // check reg
-                game_fsm.d = GameStates.BRANCH_CHECK4
-            
-            GameStates.BRANCH_CHECK4: // branch checking of if your stage is equal to 4
-                regfile_ra2 = d5    // check reg
-                //if rd2 == 1
-                if (regfile_rd2[0]){
-                    game_fsm.d = GameStates.ASSIGN_TIMER4
-                }
-                else{
-                    game_fsm.d = GameStates.CHECK_STAGE8
-                }
-                counter.d = counter.q + 1
-            
-            GameStates.ASSIGN_TIMER4: // if yes, then add 4 to the timer dff (make it equal to 8)
-                alufn = h00 //ADD 
-                regfile_ra1 = d6    // timer reg
-                asel = b00
-                bsel = b101
-                regfile_we = 1
-                regfile_wa = d6     // timer reg
-                game_fsm.d = GameStates.DS_ASSIGN_TEMPR
-                counter.d = counter.q + 1
-            
-            GameStates.CHECK_STAGE8: // if not, check if the stage number is <= 8
-                alufn = h37                    //CMPLE
-                regfile_ra1 = d1    // stage reg
-                asel = b00
-                bsel = b110
-                regfile_we = 1     
-                regfile_wa = d5     // check reg
-                game_fsm.d = GameStates.BRANCH_CHECK8
-                counter.d = counter.q + 1
-            
-            GameStates.BRANCH_CHECK8: // branching the checking if the stage number is <= 8
-                regfile_ra2 = d5    // check reg
-                //if rd2 == 1
-                if (regfile_rd2[0]){ // if yes, move on to displaying the sequence
-                    game_fsm.d = GameStates.DS_ASSIGN_TEMPR
-                }
-                else{ // if not, then the player has passed all 8 stages and wins the game
-                    game_fsm.d = GameStates.PLAYER_WINS
-                }
-                counter.d = counter.q + 1
-            
-            GameStates.DS_ASSIGN_TEMPR: // copy over the sequence to the temp sequence register to modify
-                alufn = h1A // LDR "A" 1A
-                regfile_ra1 = d2    // sequence reg
-                regfile_ra2 = d3    // temp sequence reg
-                asel = b00
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d3     // temp sequence reg
-                game_fsm.d = GameStates.DS_ASSIGN_E_R4
-                counter.d = counter.q + 1
-            
-            GameStates.DS_ASSIGN_E_R4: // extract the last 2 bits of the temp sequence and assign to mod seq reg
-                alufn = h06
-                regfile_ra1 = d3    // temp sequence reg
-                asel = b00
-                regfile_we = 1
-                regfile_wa = d4     // mod sequence reg
-                game_fsm.d = GameStates.DS_ACTIVATE_LIGHT
-                counter.d = counter.q + 1
-            
-            GameStates.DS_ACTIVATE_LIGHT: // rewrite the lights reg to have value of 2^(button pressed) (turn on the lights)
-                alufn = h20     // SHL
-                regfile_ra2 = d4    // mod sequence reg
-                asel = b10
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d8     // lights reg
-                game_fsm.d = GameStates.DS_DEACTIVATE_LIGHT
-                counter.d = counter.q + 1
-            
-            GameStates.DS_DEACTIVATE_LIGHT: // rewrite the lights reg to have value of 0 (turn off the lights)
-                regfile_we = 1
-                regfile_wa = d8     // lights reg
-                alu_out_sel = b10
-                game_fsm.d = GameStates.DS_SHR_TEMPR 
-                counter.d = counter.q + 1
-            
-            GameStates.DS_SHR_TEMPR: // delete last 2 bits of the temp sequence 
-                alufn = h21     // SHR
-                regfile_ra1 = d3    // mod sequence reg
-                asel = b00
-                bsel = b11
-                regfile_we = 1
-                regfile_wa = d3     // mod sequence reg
-                game_fsm.d = GameStates.DS_INCREASE_SEQ_ORDER
-                counter.d = counter.q + 1
-            
-            GameStates.DS_INCREASE_SEQ_ORDER: // increase seq order reg by 1
-                alufn = h00     // ADD
-                regfile_ra1 = d7    // seq order reg
-                asel = b00
-                bsel = b10
-                regfile_we = 1
-                regfile_wa = d7     // seq order reg
-                game_fsm.d = GameStates.DS_CHECK_SEQ_ORDER
-                counter.d = counter.q + 1
-            
-            GameStates.DS_CHECK_SEQ_ORDER: // check if the seq order reg now is still < stage reg
-                alufn = h35     // CMPLT
-                regfile_ra1 = d7    // seq order reg
-                regfile_ra2 = d1    // stage reg
-                asel = b00
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d5     // check reg
-                game_fsm.d = GameStates.DS_BRANCH_SEQ_CHECK
-                counter.d = counter.q + 1
-            
-            GameStates.DS_BRANCH_SEQ_CHECK: // branch check above
-                regfile_ra2 = d5    // check reg
-                if (regfile_rd2[0]){ // if yes, continue to display the other elements
+        game_fsm.d = game_fsm.q     
+        if (rst){
+            game_fsm.d = GameStates.IDLE
+        }
+        else{       
+            case(game_fsm.q){
+                // correct
+                GameStates.GENERATE_SEQUENCE: //to fix later, used to generate the sequence
+                    regfile_we = 1
+                    regfile_wa = d2     // sequence reg
+                    alu_out_sel = b11 
+                    game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
+                    debug_counter = 1
+                    //game_fsm.d = GameStates.IDLE        
+                
+                // correct
+                GameStates.SG_ASSIGN_STAGE_1: // give the stage dff a value of 1
+                    regfile_we = 1
+                    regfile_wa = d1     // stage reg
+                    alu_out_sel = b10
+                    debug_counter = 2
+                    game_fsm.d = GameStates.SG_ASSIGN_TIMER_4
+                
+                // correct
+                GameStates.SG_ASSIGN_TIMER_4: // give the timer dff a value of 4
+                    regfile_we = 1
+                    regfile_wa = d6     // timer reg
+                    alu_out_sel = b01
+                    debug_counter = 3
+                    game_fsm.d = GameStates.CHECK_STAGE4
+                
+                // correct
+                GameStates.CHECK_STAGE4: // check if your stage is equal to 4
+                    alufn = h33             //CMPEQ
+                    regfile_ra1 = d1    // stage reg
+                    asel = b00
+                    bsel = b101
+                    regfile_we = 1
+                    regfile_wa = d5     // check reg
+                    debug_counter = 4
+                    game_fsm.d = GameStates.BRANCH_CHECK4
+                
+                // correct (else)
+                GameStates.BRANCH_CHECK4: // branch checking of if your stage is equal to 4
+                    regfile_ra2 = d5    // check reg
+                    //if rd2 == 1
+                    if (regfile_rd2[0]){
+                        game_fsm.d = GameStates.ASSIGN_TIMER4
+                    }
+                    else{
+                        game_fsm.d = GameStates.CHECK_STAGE8
+                    }
+                
+                GameStates.ASSIGN_TIMER4: // if yes, then add 4 to the timer dff (make it equal to 8)
+                    alufn = h00 //ADD 
+                    regfile_ra1 = d6    // timer reg
+                    asel = b00
+                    bsel = b101
+                    regfile_we = 1
+                    regfile_wa = d6     // timer reg
+                    //game_fsm.d = GameStates.DS_ASSIGN_TEMPR
+                
+                // correct
+                GameStates.CHECK_STAGE8: // if not, check if the stage number is <= 8
+                    debug_counter = 5
+                    alufn = h37                    //CMPLE
+                    regfile_ra1 = d1    // stage reg
+                    asel = b00
+                    bsel = b110
+                    regfile_we = 1     
+                    regfile_wa = d5     // check reg
+                    game_fsm.d = GameStates.BRANCH_CHECK8
+                
+                // correct (1)
+                GameStates.BRANCH_CHECK8: // branching the checking if the stage number is <= 8
+                    regfile_ra2 = d5    // check reg
+                    //if rd2 == 1
+                    if (regfile_rd2[0]){ // if yes, move on to displaying the sequence
+                        game_fsm.d = GameStates.DS_ASSIGN_TEMPR
+                    }
+                    else{ // if not, then the player has passed all 8 stages and wins the game
+                        game_fsm.d = GameStates.PLAYER_WINS
+                    }
+                
+                // correct
+                GameStates.DS_ASSIGN_TEMPR: // copy over the sequence to the temp sequence register to modify
+                    debug_counter = 6
+                    alufn = h1A // LDR "A" 1A
+                    regfile_ra1 = d2    // sequence reg
+                    regfile_ra2 = d3    // temp sequence reg
+                    asel = b00
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d3     // temp sequence reg
                     game_fsm.d = GameStates.DS_ASSIGN_E_R4
-                }
-                else{ // if no, displaying is done and can continue to resetting before round starts
-                    game_fsm.d = GameStates.PR_RESET_SEQ_ORD
-                }
-                counter.d = counter.q + 1
-            
-            GameStates.PR_RESET_SEQ_ORD: // assign 1 to the seq order register
-                regfile_we = 1
-                regfile_wa = d7     // seq order reg
-                alu_out_sel = b10
-                game_fsm.d = GameStates.PR_ASSIGN_TEMP_SEQ
-                counter.d = counter.q + 1
-            
-            GameStates.PR_ASSIGN_TEMP_SEQ: // copy over the sequence to the temp sequence register to modify 
-                alufn = h1A // LDR "A" 1A
-                regfile_ra1 = d2    // sequence reg
-                regfile_ra2 = d3    // temp sequence reg
-                asel = b00
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d3     // temp sequence reg
-                game_fsm.d = GameStates.START_SET_TIMER
-                counter.d = counter.q + 1
-            
-            GameStates.START_SET_TIMER: // assign the countdown register the value of the timer register
-                alufn = h1A // LDR "A" 1A
-                regfile_ra1 = d6    // timer reg
-                regfile_ra2 = d0    // countdown reg
-                asel = b00
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d0     // countdown reg
-                game_fsm.d = GameStates.PG_ASSIGN_E_R4
-                counter.d = counter.q + 1
-            
-            GameStates.DECREASE_GAMETIMER: // reduce countdown reg by 1
-                alufn = h01                         //SUB
-                regfile_ra1 = d0    // countdown reg
-                asel = b00      
-                bsel = b10                             
-                regfile_we = 1
-                regfile_wa = d0
-                game_fsm.d = GameStates.IDLE
-                counter.d = counter.q + 1
-            
-            GameStates.CHECK_GAMETIMER:    // check if the countdown is equal to 0
-                alufn = h33                         //CMPEQ
-                regfile_ra2 = d0          // countdown reg
-                asel = b01
-                bsel = b00                              //constant 0
-                regfile_we = 1
-                regfile_wa = d5                 //check reg
-                game_fsm.d = GameStates.BRANCH_GAMETIMER
-                counter.d = counter.q + 1
-            
-            GameStates.BRANCH_GAMETIMER:      // branch check above
-                regfile_ra2 = d5          
-                if (~regfile_rd2[0]){  //if timer is not zero, reduce countdown by 1
-                    game_fsm.d = GameStates.DECREASE_GAMETIMER
-                }
-                else{    // if equal to 0, player has not pressed all the buttons and loses
-                    game_fsm.d = GameStates.GAMEOVER
-                }
-                counter.d = counter.q + 1
-            
-            GameStates.PG_ASSIGN_E_R4:     // assign the last 2 bits of the temp seq to the mod seq reg
-                alufn = h06
-                regfile_ra1 = d3    // temp sequence reg
-                asel = b00
-                regfile_we = 1
-                regfile_wa = d4     // mod sequence reg
-                game_fsm.d = GameStates.PG_SHR_TEMPR
-                counter.d = counter.q + 1
-            
-            GameStates.PG_SHR_TEMPR:    // delete the last 2 bits of the temp seq
-                alufn = h21     // SHR
-                regfile_ra1 = d3    // mod sequence reg
-                asel = b00
-                bsel = b11
-                regfile_we = 1
-                regfile_wa = d3     // mod sequence reg
-                game_fsm.d = GameStates.IDLE
-                counter.d = counter.q + 1
-            
-            GameStates.CHECK_ELEMENT_0:    // player presses button zero, check if sequence now is = 0
-                alufn = h33 //CMPEQ
-                regfile_ra2 = d4    // mod seq reg
-                asel = b01
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d5     // check reg
-                game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
-                counter.d = counter.q + 1
-            
-            GameStates.CHECK_ELEMENT_1:    // player presses button zero, check if sequence now is = 1
-                alufn = h33 //CMPEQ
-                regfile_ra2 = d4    // mod seq reg
-                asel = b10
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d5     // check reg
-                game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
-                counter.d = counter.q + 1
-            
-            GameStates.CHECK_ELEMENT_2:    // player presses button zero, check if sequence now is = 2
-                alufn = h33 //CMPEQ
-                regfile_ra2 = d4    // mod seq reg
-                asel = b11
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d5     // check reg
-                game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
-                counter.d = counter.q + 1
-            
-            GameStates.CHECK_ELEMENT_3:    // player presses button zero, check if sequence now is = 3
-                alufn = h33 //CMPEQ
-                regfile_ra1 = d4    // mod seq reg
-                asel = b00
-                bsel = b100
-                regfile_we = 1
-                regfile_wa = d5     // check reg
-                game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
-                counter.d = counter.q + 1
-            
-            GameStates.BRANCH_ELEMENT_BUTTON:    // branching the above 4 checks
-                regfile_ra2 = d5    // check reg
-                if (regfile_rd2[0]){    // if yes, increase seq order reg by 1
-                    game_fsm.d = GameStates.PG_INCREASE_SEQ_ORDER
-                }
-                else{    // if no, player presses wrong button and game terminates
-                    game_fsm.d = GameStates.GAMEOVER
-                }
-                counter.d = counter.q + 1
-            
-            GameStates.PG_INCREASE_SEQ_ORDER:    // increase seq order reg by 1
-                alufn = h00     // ADD
-                regfile_ra1 = d7    // seq order reg
-                asel = b00
-                bsel = b10
-                regfile_we = 1
-                regfile_wa = d7     // seq order reg
-                game_fsm.d = GameStates.PG_CHECK_SEQ_ORDER
-                counter.d = counter.q + 1
-            
-            GameStates.PG_CHECK_SEQ_ORDER:    // check if seq order is < stage number
-                alufn = h35     // CMPLT
-                regfile_ra1 = d7    // seq order reg
-                regfile_ra2 = d1    // stage reg
-                asel = b00
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d5     // check reg
-                game_fsm.d = GameStates.PG_BRANCH_SEQ_CHECK
-                counter.d = counter.q + 1
-            
-            GameStates.PG_BRANCH_SEQ_CHECK:    // branch from above
-                regfile_ra2 = d5    // check reg
-                if (regfile_rd2[0]){ // if yes, move on to next sequence
+                
+                // correct
+                GameStates.DS_ASSIGN_E_R4: // extract the last 2 bits of the temp sequence and assign to mod seq reg
+                    debug_counter = 6
+                    alufn = h06
+                    regfile_ra1 = d3    // temp sequence reg
+                    asel = b00
+                    regfile_we = 1
+                    regfile_wa = d4     // mod sequence reg
+                    game_fsm.d = GameStates.DS_ACTIVATE_LIGHT
+                
+                // 
+                GameStates.DS_ACTIVATE_LIGHT: // rewrite the lights reg to have value of 2^(button pressed) (turn on the lights)
+                    debug_counter = 7
+                    alufn = h20     // SHL
+                    regfile_ra2 = d4    // mod sequence reg
+                    asel = b10
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d8     // lights reg
+                    // game_fsm.d = GameStates.DS_DEACTIVATE_LIGHT
+                
+                GameStates.DS_DEACTIVATE_LIGHT: // rewrite the lights reg to have value of 0 (turn off the lights)
+                    regfile_we = 1
+                    regfile_wa = d8     // lights reg
+                    alu_out_sel = b10
+                    game_fsm.d = GameStates.DS_SHR_TEMPR 
+                
+                GameStates.DS_SHR_TEMPR: // delete last 2 bits of the temp sequence 
+                    alufn = h21     // SHR
+                    regfile_ra1 = d3    // mod sequence reg
+                    asel = b00
+                    bsel = b11
+                    regfile_we = 1
+                    regfile_wa = d3     // mod sequence reg
+                    game_fsm.d = GameStates.DS_INCREASE_SEQ_ORDER
+                
+                GameStates.DS_INCREASE_SEQ_ORDER: // increase seq order reg by 1
+                    alufn = h00     // ADD
+                    regfile_ra1 = d7    // seq order reg
+                    asel = b00
+                    bsel = b10
+                    regfile_we = 1
+                    regfile_wa = d7     // seq order reg
+                    game_fsm.d = GameStates.DS_CHECK_SEQ_ORDER
+                
+                GameStates.DS_CHECK_SEQ_ORDER: // check if the seq order reg now is still < stage reg
+                    alufn = h35     // CMPLT
+                    regfile_ra1 = d7    // seq order reg
+                    regfile_ra2 = d1    // stage reg
+                    asel = b00
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d5     // check reg
+                    game_fsm.d = GameStates.DS_BRANCH_SEQ_CHECK
+                
+                GameStates.DS_BRANCH_SEQ_CHECK: // branch check above
+                    regfile_ra2 = d5    // check reg
+                    if (regfile_rd2[0]){ // if yes, continue to display the other elements
+                        game_fsm.d = GameStates.DS_ASSIGN_E_R4
+                    }
+                    else{ // if no, displaying is done and can continue to resetting before round starts
+                        game_fsm.d = GameStates.PR_RESET_SEQ_ORD
+                    }
+                
+                GameStates.PR_RESET_SEQ_ORD: // assign 1 to the seq order register
+                    regfile_we = 1
+                    regfile_wa = d7     // seq order reg
+                    alu_out_sel = b10
+                    game_fsm.d = GameStates.PR_ASSIGN_TEMP_SEQ
+                
+                GameStates.PR_ASSIGN_TEMP_SEQ: // copy over the sequence to the temp sequence register to modify 
+                    alufn = h1A // LDR "A" 1A
+                    regfile_ra1 = d2    // sequence reg
+                    regfile_ra2 = d3    // temp sequence reg
+                    asel = b00
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d3     // temp sequence reg
+                    game_fsm.d = GameStates.START_SET_TIMER
+                
+                GameStates.START_SET_TIMER: // assign the countdown register the value of the timer register
+                    alufn = h1A // LDR "A" 1A
+                    regfile_ra1 = d6    // timer reg
+                    regfile_ra2 = d0    // countdown reg
+                    asel = b00
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d0     // countdown reg
                     game_fsm.d = GameStates.PG_ASSIGN_E_R4
-                }
-                else{    // if not, stage has been passed and score increases by 1
-                    game_fsm.d = GameStates.FR_ASSIGN_TEMP_SEQ
-                }
-                counter.d = counter.q + 1
-            
-            GameStates.FR_ASSIGN_TEMP_SEQ:    // reassign temp seq reg to seq reg
-                alufn = h1A // LDR "A" 1A
-                regfile_ra1 = d2    // sequence reg
-                regfile_ra2 = d3    // temp sequence reg
-                asel = b00
-                bsel = b00
-                regfile_we = 1
-                regfile_wa = d3     // temp sequence reg
-                game_fsm.d = GameStates.FR_RESET_SEQ_ORD
-                counter.d = counter.q + 1
-            
-            GameStates.FR_RESET_SEQ_ORD:    // assign 1 to seq ord reg
-                regfile_we = 1
-                regfile_wa = d7     // lights reg
-                alu_out_sel = b10
-                game_fsm.d = GameStates.FR_INCREASE_SCORE_1
-                counter.d = counter.q + 1
-            
-            GameStates.FR_INCREASE_SCORE_1:    // increase score reg by 1
-                alufn = h20 // ADD
-                regfile_ra1 = d9
-                asel = b00
-                bsel = b10
-                regfile_wa = d9
-                regfile_we = 1
-                game_fsm.d = GameStates.FR_INCREASE_STAGE_1
-                counter.d = counter.q + 1
-            
-            GameStates.FR_INCREASE_STAGE_1:    // increase stage reg by 1
-                alufn = h20 // ADD
-                regfile_ra1 = d1
-                asel = b00
-                bsel = b10
-                regfile_wa = d1
-                regfile_we = 1
-                game_fsm.d = GameStates.CHECK_STAGE4
-                counter.d = counter.q + 1
-            
-            GameStates.GAMEOVER:    // self explanatory
-                game_fsm.d = GameStates.GAMEOVER
-                counter.d = counter.q + 1
-            
-            GameStates.IDLE:
-                if (e4_button){    // if middle button is pressed, commence beginning of fsm
-                    game_fsm.d = GameStates.GENERATE_SEQUENCE
-                }
-            //else if (decrease_timer){    
-            //    game_fsm.d = GameStates.CHECK_GAMETIMER
-            //}
-            //else if (e0_button && ~e1_button && ~e2_button && ~e3_button){ // only up button is pressed
-            //    game_fsm.d = GameStates.CHECK_ELEMENT_0
-            //}
-            //else if (e1_button && ~e2_button && ~e3_button){ // only right button is pressed
-            //    game_fsm.d = GameStates.CHECK_ELEMENT_1
-            //}
-            //else if (e2_button && ~e3_button){ // only down button is pressed
-            //    game_fsm.d = GameStates.CHECK_ELEMENT_2
-            //}
-            //else if (e3_button){ // only left button is pressed
-            //    game_fsm.d = GameStates.CHECK_ELEMENT_3
-            //}
-                else{
-                   game_fsm.d = GameStates.IDLE
-                }
-            
-            
+                
+                GameStates.DECREASE_GAMETIMER: // reduce countdown reg by 1
+                    alufn = h01                         //SUB
+                    regfile_ra1 = d0    // countdown reg
+                    asel = b00      
+                    bsel = b10                             
+                    regfile_we = 1
+                    regfile_wa = d0
+                    game_fsm.d = GameStates.IDLE
+                
+                GameStates.CHECK_GAMETIMER:    // check if the countdown is equal to 0
+                    alufn = h33                         //CMPEQ
+                    regfile_ra2 = d0          // countdown reg
+                    asel = b01
+                    bsel = b00                              //constant 0
+                    regfile_we = 1
+                    regfile_wa = d5                 //check reg
+                    game_fsm.d = GameStates.BRANCH_GAMETIMER
+                
+                GameStates.BRANCH_GAMETIMER:      // branch check above
+                    regfile_ra2 = d5          
+                    if (~regfile_rd2[0]){  //if timer is not zero, reduce countdown by 1
+                        game_fsm.d = GameStates.DECREASE_GAMETIMER
+                    }
+                    else{    // if equal to 0, player has not pressed all the buttons and loses
+                        game_fsm.d = GameStates.GAMEOVER
+                    }
+                
+                GameStates.PG_ASSIGN_E_R4:     // assign the last 2 bits of the temp seq to the mod seq reg
+                    alufn = h06
+                    regfile_ra1 = d3    // temp sequence reg
+                    asel = b00
+                    regfile_we = 1
+                    regfile_wa = d4     // mod sequence reg
+                    game_fsm.d = GameStates.PG_SHR_TEMPR
+                
+                GameStates.PG_SHR_TEMPR:    // delete the last 2 bits of the temp seq
+                    alufn = h21     // SHR
+                    regfile_ra1 = d3    // mod sequence reg
+                    asel = b00
+                    bsel = b11
+                    regfile_we = 1
+                    regfile_wa = d3     // mod sequence reg
+                    game_fsm.d = GameStates.IDLE
+                
+                GameStates.CHECK_ELEMENT_0:    // player presses button zero, check if sequence now is = 0
+                    alufn = h33 //CMPEQ
+                    regfile_ra2 = d4    // mod seq reg
+                    asel = b01
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d5     // check reg
+                    game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
+                
+                GameStates.CHECK_ELEMENT_1:    // player presses button zero, check if sequence now is = 1
+                    alufn = h33 //CMPEQ
+                    regfile_ra2 = d4    // mod seq reg
+                    asel = b10
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d5     // check reg
+                    game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
+                
+                GameStates.CHECK_ELEMENT_2:    // player presses button zero, check if sequence now is = 2
+                    alufn = h33 //CMPEQ
+                    regfile_ra2 = d4    // mod seq reg
+                    asel = b11
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d5     // check reg
+                    game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
+                
+                GameStates.CHECK_ELEMENT_3:    // player presses button zero, check if sequence now is = 3
+                    alufn = h33 //CMPEQ
+                    regfile_ra1 = d4    // mod seq reg
+                    asel = b00
+                    bsel = b100
+                    regfile_we = 1
+                    regfile_wa = d5     // check reg
+                    game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
+                
+                GameStates.BRANCH_ELEMENT_BUTTON:    // branching the above 4 checks
+                    regfile_ra2 = d5    // check reg
+                    if (regfile_rd2[0]){    // if yes, increase seq order reg by 1
+                        game_fsm.d = GameStates.PG_INCREASE_SEQ_ORDER
+                    }
+                    else{    // if no, player presses wrong button and game terminates
+                        game_fsm.d = GameStates.GAMEOVER
+                    }
+                
+                GameStates.PG_INCREASE_SEQ_ORDER:    // increase seq order reg by 1
+                    alufn = h00     // ADD
+                    regfile_ra1 = d7    // seq order reg
+                    asel = b00
+                    bsel = b10
+                    regfile_we = 1
+                    regfile_wa = d7     // seq order reg
+                    game_fsm.d = GameStates.PG_CHECK_SEQ_ORDER
+                
+                GameStates.PG_CHECK_SEQ_ORDER:    // check if seq order is < stage number
+                    alufn = h35     // CMPLT
+                    regfile_ra1 = d7    // seq order reg
+                    regfile_ra2 = d1    // stage reg
+                    asel = b00
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d5     // check reg
+                    game_fsm.d = GameStates.PG_BRANCH_SEQ_CHECK
+                
+                GameStates.PG_BRANCH_SEQ_CHECK:    // branch from above
+                    regfile_ra2 = d5    // check reg
+                    if (regfile_rd2[0]){ // if yes, move on to next sequence
+                        game_fsm.d = GameStates.PG_ASSIGN_E_R4
+                    }
+                    else{    // if not, stage has been passed and score increases by 1
+                        game_fsm.d = GameStates.FR_ASSIGN_TEMP_SEQ
+                    }
+                
+                GameStates.FR_ASSIGN_TEMP_SEQ:    // reassign temp seq reg to seq reg
+                    alufn = h1A // LDR "A" 1A
+                    regfile_ra1 = d2    // sequence reg
+                    regfile_ra2 = d3    // temp sequence reg
+                    asel = b00
+                    bsel = b00
+                    regfile_we = 1
+                    regfile_wa = d3     // temp sequence reg
+                    game_fsm.d = GameStates.FR_RESET_SEQ_ORD
+                
+                GameStates.FR_RESET_SEQ_ORD:    // assign 1 to seq ord reg
+                    regfile_we = 1
+                    regfile_wa = d7     // lights reg
+                    alu_out_sel = b10
+                    game_fsm.d = GameStates.FR_INCREASE_SCORE_1
+                
+                GameStates.FR_INCREASE_SCORE_1:    // increase score reg by 1
+                    alufn = h20 // ADD
+                    regfile_ra1 = d9
+                    asel = b00
+                    bsel = b10
+                    regfile_wa = d9
+                    regfile_we = 1
+                    game_fsm.d = GameStates.FR_INCREASE_STAGE_1
+                
+                GameStates.FR_INCREASE_STAGE_1:    // increase stage reg by 1
+                    alufn = h20 // ADD
+                    regfile_ra1 = d1
+                    asel = b00
+                    bsel = b10
+                    regfile_wa = d1
+                    regfile_we = 1
+                    game_fsm.d = GameStates.CHECK_STAGE4
+                
+                GameStates.GAMEOVER:    // self explanatory
+                    game_fsm.d = GameStates.GAMEOVER
+                
+                GameStates.IDLE:
+                    if (e4_button){    // if middle button is pressed, commence beginning of fsm
+                        game_fsm.d = GameStates.GENERATE_SEQUENCE
+                    }
+                    //else if (decrease_timer){    
+                    //    game_fsm.d = GameStates.CHECK_GAMETIMER
+                    //}
+                    //else if (e0_button && ~e1_button && ~e2_button && ~e3_button){ // only up button is pressed
+                    //    game_fsm.d = GameStates.CHECK_ELEMENT_0
+                    //}
+                    //else if (e1_button && ~e2_button && ~e3_button){ // only right button is pressed
+                    //    game_fsm.d = GameStates.CHECK_ELEMENT_1
+                    //}
+                    //else if (e2_button && ~e3_button){ // only down button is pressed
+                    //    game_fsm.d = GameStates.CHECK_ELEMENT_2
+                    //}
+                    //else if (e3_button){ // only left button is pressed
+                    //    game_fsm.d = GameStates.CHECK_ELEMENT_3
+                    //}
+                    else{
+                        game_fsm.d = GameStates.IDLE
+                    }
+                
+            }
         }
         
     }
 }
-
-/*
-                    alufn = ?
-                    regfile_ra1 = 
-                    regfile_ra2 = 
-                    asel = b11
-                    bsel = b11
-                    csel = b1
-                    regfile_we = 1
-                    regfile_wa = 
-                    game_fsm.d = 
-*/

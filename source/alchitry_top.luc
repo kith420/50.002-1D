@@ -78,7 +78,7 @@ module alchitry_top (
         // THIS IS NOT COMPLETE
         seg.values = 4x{{4b0}} // default to all 0 first
         //bin_to_dec_converter.value = game_datapath.countdown_out
-        bin_to_dec_converter.value = game_datapath.debug_out
+        bin_to_dec_converter.value = game_datapath.debug_seg
         seg.values = bin_to_dec_converter.digits
         
         // assign ioled to button light 
@@ -86,7 +86,8 @@ module alchitry_top (
         io_select = ~seg.sel
         
         // debug
-        io_led[1] = game_datapath.debug_wa
+        io_led[1] = game_datapath.debug_ioled
+        //io_led[2] = game_datapath.debug_ioled[15:8]
         
     }
 }
