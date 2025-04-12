@@ -104,7 +104,7 @@ module game_datapath#(
         
         // debug
         debug_seg = game_cu.debug_counter
-        //debug_seg = game_regfiles.light_out
+        //debug_seg = game_regfiles.mod_sequence_out
         debug_ioled = game_regfiles.light_out
         }
 }

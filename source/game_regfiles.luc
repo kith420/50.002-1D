@@ -13,11 +13,11 @@ module game_regfiles (
     // states
     output countdown_out[4],
     output stage_out[4],
-    output sequence_out[32],
+    output sequence_out[16],
+    output temp_sequence_out[16],
+    output mod_sequence_out[2],
+    output check_out[1],
     output timer_out[4],
-    output temp_sequence_out[32],
-    output mod_sequence_out[32],
-    output check_out[32],
     output light_out[4]
 ) {
     .clk(clk){

@@ -195,7 +195,7 @@ module game_cu (
                     regfile_wa = d4     // mod sequence reg
                     game_fsm.d = GameStates.DS_ACTIVATE_LIGHT
                 
-                // 
+                // HELP HERE PLSPLSPLS
                 GameStates.DS_ACTIVATE_LIGHT: // rewrite the lights reg to have value of 2^(button pressed) (turn on the lights)
                     debug_counter = 7
                     alufn = h20     // SHL
