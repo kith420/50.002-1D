@@ -1,12 +1,12 @@
 module game_regfiles (
     input clk,  // clock
     input rst,  // reset
-    input wa[3], // write address
+    input wa[4], // write address
     input we, // write enable
     input data[32], // data in
     
-    input ra1[3], // read address port 1
-    input ra2[3], // read address port 2
+    input ra1[4], // read address port 1
+    input ra2[4], // read address port 2
     output rd1[32], // read data port 1
     output rd2[32], // read data port 1
     
@@ -17,6 +17,7 @@ module game_regfiles (
     output temp_sequence_out[16],
     output mod_sequence_out[2],
     output check_out[1],
+    output sequence_order_out[4],
     output timer_out[4],
     output light_out[4]
 ) {
@@ -86,9 +87,10 @@ module game_regfiles (
         stage_out = stage.q
         sequence_out = sequence.q
         temp_sequence_out = temp_sequence.q
-        mod_sequence_out = mod_sequence.q
+        mod_sequence_out = mod_sequence.q 
         check_out = check.q
         timer_out = timer.q
+        sequence_order_out = sequence_order.q
         light_out = light.q //light dff
     }
 }
