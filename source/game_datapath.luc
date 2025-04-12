@@ -5,6 +5,7 @@ module game_datapath#(
     input button_down,
     input button_left,
     input button_right,    
+    input advance_button_edge,
     
     input clk,  // clock
     input rst,  // reset
@@ -14,11 +15,36 @@ module game_datapath#(
     output stage_out[32],  
     
     // display on io_led (button)
-    output current_seq[32]
+    output current_seq[32],
+    
+    //output countdown_debug[16],
+    //output stage_debug[16],
+    output rd1_out_debug[16],
+    output rd2_out_debug[16],
+    //output sequence_order_debug[16],
+    //output alu_out_debug[16],
+    output wdsel_out_debug[16],
+    output bsel_out_debug[16],
+    output asel_out_debug[16],
+    //output control_signals_debug[16], // asel(3) bsel(3) wdsel(3) ra1(3) ra2(3), ignore MSB
+    output state_out_debug[16]
+    //output score_out_debug[16],
+    //output light_out_debug[16]
 ) {
     //temp variables
     sig input_alu_a[32]
     sig input_alu_b[32]
+    
+    sig rd1_out[32]
+    sig rd2_out[32]
+    //sig alu_out[32]
+    sig wdsel_out[32]
+    sig bsel_out[32]
+    sig control_signals[32]
+    sig score_out[32]
+    sig asel_out[32]
+    sig light_debug_out[32]
+    
     
     alu alu
     
@@ -34,6 +60,7 @@ module game_datapath#(
             .e2_button(button_down),
             .e3_button(button_right),
             .rst(rst),
+            .fsm_clock(advance_button_edge),
             .decrease_timer(edge_detector_game_timer.out)
         )
         
@@ -50,31 +77,70 @@ module game_datapath#(
         
         // bootstrap rd2 output to CU for convenient branching conditions
         game_cu.regfile_rd2 = game_regfiles.rd2
+        rd1_out_debug = game_regfiles.rd1
+        rd2_out_debug = game_regfiles.rd2
+        
+        state_out_debug = game_cu.state_debug_out
+        
+        
+        
+        
         
         // asel mux
         case(game_cu.asel){
-            b00  : input_alu_a = game_regfiles.rd1
-            b01  : input_alu_a = 0
-            b10 : input_alu_a = 1
-            b11  : input_alu_a = 2
+            b00  : 
+                //input_alu_a = game_regfiles.rd1
+                asel_out = game_regfiles.rd1
+            b01  : 
+                //input_alu_a = 0
+                asel_out = 0
+            b10 : 
+                //input_alu_a = 1
+                asel_out = 1
+            b11  : 
+                //input_alu_a = 2
+                asel_out = 2
             default : 
-                input_alu_a = 0
+                //input_alu_a = 0
+                asel_out = 0
         }
+        // hook it up to the output port 
+        asel_out_debug = asel_out
         
+        // also connect it to alu  
+        input_alu_a = asel_out 
         // bsel mux
         case(game_cu.bsel){
-            b00 : input_alu_b = game_regfiles.rd2
-            b01 : input_alu_b = 0
-            b10 : input_alu_b = 1
-            b11 : input_alu_b = 2
-            b100 : input_alu_b = 3
-            b101 : input_alu_b = 4
-            b110 : input_alu_b = 8
-            b111 : input_alu_b = 16
+            b00 : 
+                //input_alu_b = game_regfiles.rd2
+                bsel_out = game_regfiles.rd2
+            b01 : 
+                //input_alu_b = 0
+                bsel_out = 0
+            b10 : 
+                //input_alu_b = 1
+                bsel_out = 1
+            b11 : 
+                //input_alu_b = 2
+                bsel_out = 2
+            b100 : 
+                //input_alu_b = 3
+                bsel_out = 3
+            b101 : 
+                //input_alu_b = 4
+                bsel_out = 4
+            b110 : 
+                //input_alu_b = 8
+                bsel_out = 8
+            b111 : 
+                //input_alu_b = 16
+                bsel_out = 16
             default:
-                input_alu_b = 0
+                //input_alu_b = 0
+                bsel_out = 0
         }
-        
+        bsel_out_debug = bsel_out
+        input_alu_b = bsel_out
         // alu
         alu.a = input_alu_a
         alu.b = input_alu_b
@@ -82,18 +148,28 @@ module game_datapath#(
         
         // wdsel mux
         case (game_cu.alu_out_sel){
-            b00 : game_regfiles.data = alu.out
-            b01 : game_regfiles.data = 0
-            b10 : game_regfiles.data = 1
-            b11 : game_regfiles.data = b1110110100101101
+            b00 : 
+                //game_regfiles.data = alu.out
+                wdsel_out = alu.out
+            b01 : 
+                //game_regfiles.data = 0
+                wdsel_out = 0
+            b10 : 
+                //game_regfiles.data = 1
+                wdsel_out = 1
+            b11 : 
+                //game_regfiles.data = b1110110100101101
+                wdsel_out = b1110110100101101
             default : 
-                game_regfiles.data = alu.out
+                //game_regfiles.data = alu.out
+            wdsel_out = alu.out
         }
+        wdsel_out_debug = wdsel_out
+        game_regfiles.data = wdsel_out
         
-  
         // display on 7 seg
         countdown_out = game_regfiles.countdown_out
         stage_out = game_regfiles.stage_out
         current_seq = game_regfiles.sequence_order_out
-        }
+    }
 }

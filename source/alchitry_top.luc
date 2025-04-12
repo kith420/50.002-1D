@@ -7,7 +7,8 @@ module alchitry_top (
     output io_led[3][8],    // LEDs on IO Shield
     output io_segment[8],   // 7-segment LEDs on IO Shield
     output io_select[4],    // Digit select on IO Shield
-    input io_button[5]     // 5 buttons on IO Shield
+    input io_button[5],     // 5 buttons on IO Shield
+    input io_dip[3][8]
 ) {
     
     sig rst                 // reset signal
@@ -16,11 +17,27 @@ module alchitry_top (
     const SLOW_CLOCK_DIV = $is_sim() ? 9 : 26 // put 9 for sim, 26 for hardware 
     // const FAST_CLOCK_DIV = $is_sim() ? 7 : 21 // put 7 for sim, 21 for hardware 
     
+    // in alchitry_top
+    button_conditioner advance_button_conditioner(.clk(clk), #CLK_FREQ(CLK_FREQ), .in(io_button[1]))
+    button_conditioner button_up(.clk(clk),#CLK_FREQ(CLK_FREQ), .in(io_button[0]))
+    button_conditioner button_left(.clk(clk),#CLK_FREQ(CLK_FREQ), .in(io_button[4]))
+    button_conditioner button_down(.clk(clk),#CLK_FREQ(CLK_FREQ), .in(io_button[3]))
+    button_conditioner button_right(.clk(clk),#CLK_FREQ(CLK_FREQ), .in(io_button[2]))
+    edge_detector advance_button_edge(.clk(clk),#RISE(1), #FALL(0), .in(advance_button_conditioner.out))
+    
+    
+    
+    
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
-                
+        
+        counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
+        
+        // edge detector declaration & connection with counters
+        //edge_detector edge_detector_game_timer(#RISE(1), #FALL(0), .in(game_timer_clock.value))
+        
         edge_detector edge_dt_btn_up (#RISE(1), #FALL(0))
         edge_detector edge_dt_btn_down(#RISE(1), #FALL(0))
         edge_detector edge_dt_btn_left(#RISE(1), #FALL(0))
@@ -33,11 +50,24 @@ module alchitry_top (
         
         .rst(rst) {
             multi_seven_seg seg(#DIV(SEVEN_SEG_DIV))
-            game_datapath game_datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV))
+            game_datapath game_datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV), 
+                .advance_button_edge(advance_button_edge.out))
         }
     }
-    
+    // if instantiated in other module, simply pass advance_button_edge.out to it 
+    //game_cu game_cu(
+        //.clk(clk),
+        //.e0_button(button_up.out),
+        //.e1_button(button_left.out),
+        //.e2_button(button_down.out),
+        //.e3_button(button_right.out),
+        //.rst(rst),
+        //.decrease_timer(edge_detector_game_timer.out),
+        //.fsm_clock(advance_button_edge.out),
+        //.regfile_rd2(0)
+    //)
     bin_to_dec bin_to_dec_converter(#DIGITS(4))
+    bin_to_dec seven_seg_digits(#DIGITS(4))
     
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
@@ -45,8 +75,8 @@ module alchitry_top (
         usb_tx = usb_rx         // loop serial port    
         
         io_led = 3x{{8h00}}    // turn LEDs off
-        io_segment = 8hff          // turn segments off
-        io_select = 4hf           // select no digits
+        //io_segment = 8hff          // turn segments off
+        //io_select = 4hf           // select no digits
         
         // CHANGE THE IO_BUTTON
         btn_cond_up.in = io_button[0] //to reduce the bouncing effects of your button 
@@ -66,16 +96,60 @@ module alchitry_top (
         
         // Display sequence light on io_led
         io_led[0] = game_datapath.current_seq
-
+        
         //update 7segments. 
         // THIS IS NOT COMPLETE
         seg.values = 4x{{4b0}} // default to all 0 first
         bin_to_dec_converter.value = game_datapath.countdown_out
         seg.values = bin_to_dec_converter.digits
         
+        
+        
         // assign ioled to button light 
         io_segment = ~seg.seg
         io_select = ~seg.sel
         
+        case (io_dip[0]){
+
+            h00:
+                io_led[1:0] = $build(game_datapath.state_out_debug, 2)
+                seven_seg_digits.value = game_datapath.state_out_debug
+                seg.values = seven_seg_digits.digits
+            h01: 
+                io_led[1:0] = $build(game_datapath.asel_out_debug, 2)
+                seven_seg_digits.value = game_datapath.asel_out_debug
+                seg.values = seven_seg_digits.digits
+                //seg.values = $build(game_datapath.asel_out_debug, 4)
+            h02: 
+                io_led[1:0] = $build(game_datapath.bsel_out_debug, 2)
+                seven_seg_digits.value = game_datapath.bsel_out_debug
+                seg.values = seven_seg_digits.digits
+                //seg.values = $build(game_datapath.bsel_out_debug, 4)
+            
+            h03: 
+                io_led[1:0] = $build(game_datapath.wdsel_out_debug, 2)
+                seven_seg_digits.value = game_datapath.wdsel_out_debug
+                seg.values = seven_seg_digits.digits
+                //seg.values = $build(game_datapath.wdsel_out_debug, 4)
+            h04: 
+                io_led[1:0] = $build(game_datapath.rd1_out_debug, 2)
+                seven_seg_digits.value = game_datapath.rd1_out_debug
+                seg.values = seven_seg_digits.digits
+                //seg.values = $build(game_datapath.rd1_out_debug, 4)
+            h05: 
+                io_led[1:0] = $build(game_datapath.rd2_out_debug, 2)
+                seven_seg_digits.value = game_datapath.rd2_out_debug
+                seg.values = seven_seg_digits.digits
+                //seg.values = $build(game_datapath.rd2_out_debug, 4)
+            //h06:
+                //io_led[2:0] = $build(game_datapath.current_seq, 2)
+                //seg.values = $build(game_datapath.current_seq, 4)
+            default:
+                io_led[1:0] = $build(game_datapath.state_out_debug, 2)
+                seven_seg_digits.value = game_datapath.state_out_debug
+                seg.values = seven_seg_digits.digits
+                //seg.values = $build(game_datapath.state_out_debug, 4)
+
+    }
     }
 }

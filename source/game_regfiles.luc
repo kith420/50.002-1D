@@ -18,7 +18,9 @@ module game_regfiles (
     // output mod_sequence_out[32],
     // output check_out[32],
     // output timer_out[32],
-    output sequence_order_out[32]
+    output sequence_order_out[32],
+    output score_out[32],
+    output light_out[32]
 ) {
     .clk(clk){
         .rst(rst){
@@ -94,5 +96,7 @@ module game_regfiles (
         // check_out = check.q
         // timer_out = timer.q
         sequence_order_out = light.q
+        score_out = score.q
+        light_out = light.q
     }
 }
