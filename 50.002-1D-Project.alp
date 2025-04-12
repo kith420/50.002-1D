@@ -68,12 +68,6 @@
             {
                 "file": {
                     "type": "DiskFile",
-                    "path": "source/game_cu_sample.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
                     "path": "source/alu.luc"
                 }
             },

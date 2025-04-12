@@ -2,11 +2,12 @@ module alchitry_top (
     input clk,              // 100MHz clock
     input rst_n,            // reset button (active low)
     input usb_rx,           // USB->Serial input
-    output usb_tx,          // USB->Serial output
+    input io_dip[3][8],      // IO DIP
     
+    output usb_tx,          // USB->Serial output
     output io_led[3][8],    // LEDs on IO Shield
     output io_segment[8],   // 7-segment LEDs on IO Shield
-    output io_select[4],    // Digit select on IO Shield
+    output io_select[5],    // Digit select on IO Shield
     input io_button[5]     // 5 buttons on IO Shield
 ) {
     
@@ -25,11 +26,13 @@ module alchitry_top (
         edge_detector edge_dt_btn_down(#RISE(1), #FALL(0))
         edge_detector edge_dt_btn_left(#RISE(1), #FALL(0))
         edge_detector edge_dt_btn_right(#RISE(1), #FALL(0))
+        edge_detector edge_dt_btn_middle(#RISE(1), #FALL(0))
         
         button_conditioner btn_cond_up(#CLK_FREQ(CLK_FREQ))
         button_conditioner btn_cond_down(#CLK_FREQ(CLK_FREQ)) 
         button_conditioner btn_cond_left(#CLK_FREQ(CLK_FREQ)) 
-        button_conditioner btn_cond_right(#CLK_FREQ(CLK_FREQ)) 
+        button_conditioner btn_cond_right(#CLK_FREQ(CLK_FREQ))
+        button_conditioner btn_cond_middle(#CLK_FREQ(CLK_FREQ))
         
         .rst(rst) {
             multi_seven_seg seg(#DIV(SEVEN_SEG_DIV))
@@ -51,18 +54,22 @@ module alchitry_top (
         // CHANGE THE IO_BUTTON
         btn_cond_up.in = io_button[0] //to reduce the bouncing effects of your button 
         btn_cond_down.in = io_button[2]
-        btn_cond_left.in = io_button[4]
-        btn_cond_right.in = io_button[3]
+        btn_cond_left.in = io_button[3]
+        btn_cond_right.in = io_button[4]
+        btn_cond_middle.in = io_button[1]
+        
         
         edge_dt_btn_up.in = btn_cond_up.out //get the edge of button press
         edge_dt_btn_down.in = btn_cond_down.out
         edge_dt_btn_left.in = btn_cond_left.out
         edge_dt_btn_right.in = btn_cond_right.out
+        edge_dt_btn_middle.in = btn_cond_middle.out
         
         game_datapath.button_up = edge_dt_btn_up.out
         game_datapath.button_down = edge_dt_btn_down.out
         game_datapath.button_left = edge_dt_btn_left.out
         game_datapath.button_right = edge_dt_btn_right.out
+        game_datapath.button_middle = edge_dt_btn_middle.out
         
         // Display sequence light on io_led
         io_led[0] = game_datapath.current_seq

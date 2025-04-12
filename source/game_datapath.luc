@@ -4,7 +4,8 @@ module game_datapath#(
     input button_up,
     input button_down,
     input button_left,
-    input button_right,    
+    input button_right,
+    input button_middle,
     
     input clk,  // clock
     input rst,  // reset
@@ -33,6 +34,7 @@ module game_datapath#(
             .e1_button(button_left),
             .e2_button(button_down),
             .e3_button(button_right),
+            .e4_button(button_middle),
             .rst(rst),
             .decrease_timer(edge_detector_game_timer.out)
         )
