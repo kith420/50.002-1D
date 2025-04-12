@@ -18,7 +18,8 @@ module game_datapath#(
     output current_seq[4],
     
     // debug counter
-    output debug_out
+    output debug_out,
+    output debug_wa
 ) {
     //temp variables
     sig input_alu_a[32]
@@ -101,6 +102,6 @@ module game_datapath#(
         stage_out = game_regfiles.stage_out
         current_seq = game_regfiles.sequence_order_out
         debug_out = game_cu.debug_counter
-        
+        debug_wa = game_cu.regfile_wa
         }
 }

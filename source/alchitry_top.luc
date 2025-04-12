@@ -85,5 +85,8 @@ module alchitry_top (
         io_segment = ~seg.seg
         io_select = ~seg.sel
         
+        // debug
+        io_led[1] = game_datapath.debug_wa
+        
     }
 }
