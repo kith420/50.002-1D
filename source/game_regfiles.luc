@@ -11,28 +11,28 @@ module game_regfiles (
     output rd2[32], // read data port 1
     
     // states
-    output countdown_out[32],
-    output stage_out[32],
+    output countdown_out[4],
+    output stage_out[4],
     // output sequence_out[32],
     // output temp_sequence_out[32],
     // output mod_sequence_out[32],
     // output check_out[32],
     // output timer_out[32],
-    output sequence_order_out[32]
+    output sequence_order_out[4]
 ) {
     .clk(clk){
         .rst(rst){
-            dff countdown[32](#INIT(0))
-            dff stage[32](#INIT(0))
-            dff sequence[32](#INIT(0))
-            dff temp_sequence[32](#INIT(0))
-            dff mod_sequence[32](#INIT(0))
-            dff check[32](#INIT(0))
-            dff timer[32](#INIT(0))
-            dff sequence_order[32](#INIT(0))
+            dff countdown[4](#INIT(0))
+            dff stage[4](#INIT(0))
+            dff sequence[16](#INIT(0))
+            dff temp_sequence[16](#INIT(0))
+            dff mod_sequence[2](#INIT(0))
+            dff check[1](#INIT(0)) // for comparing, 1 means true, 0 means false
+            dff timer[4](#INIT(0))
+            dff sequence_order[4](#INIT(0))
             // Nathan help check
-            dff light[32](#INIT(0))
-            dff score[32](#INIT(0))
+            dff light[4](#INIT(0))
+            dff score[4](#INIT(0))
         }
     }
     always {

@@ -11,11 +11,14 @@ module game_datapath#(
     input rst,  // reset
     
     // display on 7 seg
-    output countdown_out[32],
-    output stage_out[32],  
+    output countdown_out[4],
+    output stage_out[4],  
     
     // display on io_led (button)
-    output current_seq[32]
+    output current_seq[4],
+    
+    // debug counter
+    output debug_out
 ) {
     //temp variables
     sig input_alu_a[32]
@@ -97,5 +100,7 @@ module game_datapath#(
         countdown_out = game_regfiles.countdown_out
         stage_out = game_regfiles.stage_out
         current_seq = game_regfiles.sequence_order_out
+        debug_out = game_cu.debug_counter
+        
         }
 }

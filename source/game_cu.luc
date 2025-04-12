@@ -18,7 +18,8 @@ module game_cu (
     output regfile_ra1[4],
     output regfile_ra2[4],
     output regfile_we,
-    output debug[4]
+    
+    output debug_counter
 ) {
     
     enum GameStates {
@@ -76,7 +77,7 @@ module game_cu (
     dff counter[32](#INIT(GameStates.START_SET_TIMER), .clk(clk), .rst(rst))
     
     always {
-        
+        debug_counter = counter.q
         // standard setting unless otherwise overwritten by each case 
         alufn = 0
         asel = 0 
@@ -86,10 +87,7 @@ module game_cu (
         regfile_ra1 = d0
         regfile_ra2 = d0
         alu_out_sel = 0
-        counter.d = 0
-        
-        debug = b0000
-        
+        counter.d = 0        
         
         game_fsm.d = game_fsm.q
         if (rst){

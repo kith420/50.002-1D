@@ -7,7 +7,7 @@ module alchitry_top (
     output usb_tx,          // USB->Serial output
     output io_led[3][8],    // LEDs on IO Shield
     output io_segment[8],   // 7-segment LEDs on IO Shield
-    output io_select[5],    // Digit select on IO Shield
+    output io_select[4],    // Digit select on IO Shield
     input io_button[5]     // 5 buttons on IO Shield
 ) {
     
@@ -77,7 +77,8 @@ module alchitry_top (
         //update 7segments. 
         // THIS IS NOT COMPLETE
         seg.values = 4x{{4b0}} // default to all 0 first
-        bin_to_dec_converter.value = game_datapath.countdown_out
+        //bin_to_dec_converter.value = game_datapath.countdown_out
+        bin_to_dec_converter.value = game_datapath.debug_out
         seg.values = bin_to_dec_converter.digits
         
         // assign ioled to button light 
