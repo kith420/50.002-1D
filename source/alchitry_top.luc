@@ -8,6 +8,10 @@ module alchitry_top (
     output io_led[3][8],    // LEDs on IO Shield
     output io_segment[8],   // 7-segment LEDs on IO Shield
     output io_select[4],    // Digit select on IO Shield
+    output ext_segment[8],
+    output ext_select[1],
+    output ext_segment2[8],
+    output ext_select2[1],
     input io_button[5]     // 5 buttons on IO Shield
 ) {
     
@@ -41,6 +45,8 @@ module alchitry_top (
     }
     
     bin_to_dec bin_to_dec_converter(#DIGITS(4))
+    seven_seg ext_seg_dec;
+    seven_seg ext_seg_dec2
     
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
@@ -84,6 +90,13 @@ module alchitry_top (
         // assign ioled to button light 
         io_segment = ~seg.seg
         io_select = ~seg.sel
+        
+        ext_seg_dec.char = game_datapath.countdown_out[0];
+        ext_segment = ~ext_seg_dec.segs;
+        ext_select = b0
+        ext_seg_dec2.char = game_datapath.stage_out[0];
+        ext_segment2 = ~ext_seg_dec2.segs;
+        ext_select2 = b0
         
         // debug
         io_led[1] = game_datapath.debug_ioled

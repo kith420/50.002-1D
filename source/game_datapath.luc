@@ -11,8 +11,8 @@ module game_datapath#(
     input rst,  // reset
     
     // display on 7 seg
-    //output countdown_out[4],
-    //output stage_out[4],  
+    output countdown_out[4],
+    output stage_out[4],  
     
     // display on io_led (button)
     output current_seq[4],
@@ -101,8 +101,8 @@ module game_datapath#(
         
   
         // display on 7 seg
-        //countdown_out = game_regfiles.countdown_out
-        //stage_out = game_regfiles.stage_out
+        countdown_out = game_regfiles.countdown_out
+        stage_out = game_regfiles.stage_out
         current_seq = game_regfiles.light_out
         
         // debug
