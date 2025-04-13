@@ -19,7 +19,8 @@ module game_regfiles (
     output check_out[1],
     output sequence_order_out[4],
     output timer_out[4],
-    output light_out[4]
+    output light_out[4],
+    output score_out[4]
 ) {
     .clk(clk){
         .rst(rst){
@@ -92,5 +93,6 @@ module game_regfiles (
         timer_out = timer.q
         sequence_order_out = sequence_order.q
         light_out = light.q //light dff
+        score_out = score.q
     }
 }

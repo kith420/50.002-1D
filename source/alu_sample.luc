@@ -52,7 +52,8 @@ module alu_sample (
                 out_sig = a <= b
             6h03: // GET
                 out_sig = a - ((a >> 2) << 2)
-            
+            6h06: //mod4
+            out_sig = a-((a>>2)<<2)
             
             default:
                 out_sig = 0

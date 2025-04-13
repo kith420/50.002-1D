@@ -25,7 +25,8 @@ module game_datapath#(
     sig input_alu_a[32]
     sig input_alu_b[32]
     
-    alu alu
+    //alu alu
+    alu_sample alu
     
     .clk(clk){
         counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
@@ -35,9 +36,9 @@ module game_datapath#(
         
         game_cu game_cu(
             .e0_button(button_up),
-            .e1_button(button_left),
+            .e1_button(button_right),
             .e2_button(button_down),
-            .e3_button(button_right),
+            .e3_button(button_left),
             .e4_button(button_middle),
             .rst(rst),
             .decrease_timer(edge_detector_game_timer.out)
@@ -106,6 +107,6 @@ module game_datapath#(
         // debug
         debug_seg = game_cu.debug_counter
         //debug_seg = game_regfiles.mod_sequence_out
-        debug_ioled = game_regfiles.sequence_order_out
+        debug_ioled = game_regfiles.score_out
         }
 }
