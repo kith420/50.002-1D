@@ -1,5 +1,5 @@
 module random_number_generator#(
-    SIZE = 8
+    SIZE = 16
 ) (
     input clk,  // clock
     input slow_clk,

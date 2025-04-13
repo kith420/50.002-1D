@@ -70,15 +70,17 @@ module game_cu (
         FR_RESET_SEQ_ORD,
         FR_ASSIGN_TEMP_SEQ,
         FR_INCREASE_SCORE_1,
-        FR_INCREASE_STAGE_1
+        FR_INCREASE_STAGE_1,
+        
+        END_DISPLAY
     }
     
     dff game_fsm[$width(GameStates)](#INIT(GameStates.IDLE), .clk(clk), .rst(rst))
-
+    
     always {
         // debug
         debug_counter = 0
-                
+        
         // standard setting unless otherwise overwritten by each case 
         alufn = 0
         asel = 0 
@@ -102,7 +104,7 @@ module game_cu (
                     alu_out_sel = b11 
                     game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
                     debug_counter = 1
-                    //game_fsm.d = GameStates.IDLE        
+                //game_fsm.d = GameStates.IDLE        
                 
                 // correct
                 GameStates.SG_ASSIGN_STAGE_1: // give the stage dff a value of 1
@@ -149,7 +151,7 @@ module game_cu (
                     bsel = b101
                     regfile_we = 1
                     regfile_wa = d6     // timer reg
-                    //game_fsm.d = GameStates.DS_ASSIGN_TEMPR
+                //game_fsm.d = GameStates.DS_ASSIGN_TEMPR
                 
                 // correct
                 GameStates.CHECK_STAGE8: // if not, check if the stage number is <= 8
@@ -173,14 +175,18 @@ module game_cu (
                         game_fsm.d = GameStates.PLAYER_WINS
                     }
                 
+                GameStates.PLAYER_WINS:
+                    alu_out_sel = b101
+                    regfile_wa = d9
+                    regfile_we = 1
+                    game_fsm.d = GameStates.END_DISPLAY
+                
                 // correct
                 GameStates.DS_ASSIGN_TEMPR: // copy over the sequence to the temp sequence register to modify
                     debug_counter = 6
                     alufn = h1A // LDR "A" 1A
                     regfile_ra1 = d2    // sequence reg
-                    regfile_ra2 = d3    // temp sequence reg
                     asel = b00
-                    bsel = b00
                     regfile_we = 1
                     regfile_wa = d3     // temp sequence reg
                     game_fsm.d = GameStates.DS_ASSIGN_E_R4
@@ -188,7 +194,7 @@ module game_cu (
                 // correct
                 GameStates.DS_ASSIGN_E_R4: // extract the last 2 bits of the temp sequence and assign to mod seq reg
                     debug_counter = 6
-                    alufn = h06
+                    alufn = h06 // MODFOUR (ALU Operation)
                     regfile_ra1 = d3    // temp sequence reg
                     asel = b00
                     regfile_we = 1
@@ -204,7 +210,7 @@ module game_cu (
                     bsel = b00
                     regfile_we = 1
                     regfile_wa = d8     // lights reg
-                    game_fsm.d = GameStates.DS_DEACTIVATE_LIGHT
+                //game_fsm.d = GameStates.DS_DEACTIVATE_LIGHT
                 
                 // correct
                 GameStates.DS_DEACTIVATE_LIGHT: // rewrite the lights reg to have value of 0 (turn off the lights)
@@ -246,7 +252,7 @@ module game_cu (
                     bsel = b00
                     regfile_we = 1
                     regfile_wa = d5     // check reg
-                    //game_fsm.d = GameStates.DS_BRANCH_SEQ_CHECK
+                //game_fsm.d = GameStates.DS_BRANCH_SEQ_CHECK
                 
                 GameStates.DS_BRANCH_SEQ_CHECK: // branch check above
                     regfile_ra2 = d5    // check reg
@@ -425,6 +431,12 @@ module game_cu (
                     regfile_we = 1
                     game_fsm.d = GameStates.FR_INCREASE_STAGE_1
                 
+                GameStates.STAGE_COMPLETE:
+                    regfile_wa = d8
+                    regfile_we = 1
+                alu_out_sel
+                
+                
                 GameStates.FR_INCREASE_STAGE_1:    // increase stage reg by 1
                     alufn = h20 // ADD
                     regfile_ra1 = d1
@@ -435,6 +447,15 @@ module game_cu (
                     game_fsm.d = GameStates.CHECK_STAGE4
                 
                 GameStates.GAMEOVER:    // self explanatory
+                    alu_out_sel = b101
+                    regfile_wa = d9
+                    regfile_we = 1
+                    game_fsm.d = GameStates.END_DISPLAY
+                
+                GameStates.END_DISPLAY:
+                    alu_out_sel = b101
+                    regfile_wa = d0
+                    regfile_we = 1
                     game_fsm.d = GameStates.GAMEOVER
                 
                 GameStates.IDLE:

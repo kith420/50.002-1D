@@ -98,6 +98,9 @@ module game_datapath#(
             b01 : game_regfiles.data = 4
             b10 : game_regfiles.data = 1
             b11 : game_regfiles.data = generator.out
+            b100 : game_regfiles.data = 0
+            b101 : game_regfiles.data = 8
+            b110 : game_regfiles.data = b1111
             default : 
                 game_regfiles.data = alu.out
         }
@@ -111,6 +114,6 @@ module game_datapath#(
         // debug
         debug_seg = game_cu.debug_counter
         //debug_seg = game_regfiles.mod_sequence_out
-        debug_ioled = game_regfiles.sequence_order_out
+        debug_ioled = game_regfiles.light_out
         }
 }
