@@ -97,12 +97,6 @@
             },
             {
                 "file": {
-                    "type": "DiskFile",
-                    "path": "source/alu_sample.luc"
-                }
-            },
-            {
-                "file": {
                     "type": "Component",
                     "path": "Conditioning/button_conditioner.luc"
                 }
@@ -146,12 +140,6 @@
             {
                 "file": {
                     "type": "DiskFile",
-                    "path": "source/modulo.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
                     "path": "source/multiplier.luc"
                 }
             },
@@ -189,18 +177,6 @@
                 "file": {
                     "type": "DiskFile",
                     "path": "source/adder.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/random_number_generator.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/pn_gen.luc"
                 }
             }
         ],

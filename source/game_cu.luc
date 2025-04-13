@@ -22,7 +22,7 @@ module game_cu (
     // debug
     output debug_counter[32]
 ) {
-    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 8 : 28 // put 8  for sim, 28 for hardware
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 8 : 24 // put 8  for sim, 28 for hardware
     sig slow_clock
     
     .clk(clk){

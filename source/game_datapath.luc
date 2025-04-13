@@ -1,5 +1,5 @@
 module game_datapath#(
-    SLOW_CLOCK_DIV ~ 28 : SLOW_CLOCK_DIV > 0
+    SLOW_CLOCK_DIV ~ 26 : SLOW_CLOCK_DIV > 0
 ) (
     input button_up,
     input button_down,
@@ -26,8 +26,8 @@ module game_datapath#(
     sig input_alu_a[32]
     sig input_alu_b[32]
     
-    //alu alu
-    alu_sample alu
+    alu alu
+    //alu_sample alu
     
     .clk(clk){
         counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
