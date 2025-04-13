@@ -1,5 +1,5 @@
 module game_datapath#(
-    SLOW_CLOCK_DIV ~ 26 : SLOW_CLOCK_DIV > 0
+    SLOW_CLOCK_DIV ~ 28 : SLOW_CLOCK_DIV > 0
 ) (
     input button_up,
     input button_down,
@@ -11,15 +11,16 @@ module game_datapath#(
     input rst,  // reset
     
     // display on 7 seg
-    output countdown_out[4],
-    output stage_out[4],  
+    //output countdown_out[4],
+    //output stage_out[4],  
     
     // display on io_led (button)
     output current_seq[4],
     
     // debug counter
     output debug_seg[32],
-    output debug_ioled[8]
+    output debug_ioled[8],
+    output debug_ioled2[8]
 ) {
     //temp variables
     sig input_alu_a[32]
@@ -28,17 +29,11 @@ module game_datapath#(
     //alu alu
     alu_sample alu
     
-    const CLOCK_DIVIDER = $is_sim() ? 11 : 26
-    
     .clk(clk){
         counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
-        .rst(rst){
-             counter slow_clk(#SIZE(1), #DIV(CLOCK_DIVIDER))
-        }
         
         // edge detector declaration & connection with counters
         edge_detector edge_detector_game_timer(#RISE(1), #FALL(0), .in(game_timer_clock.value))
-        random_number_generator generator(.slow_clk(slow_clk.value))
         
         game_cu game_cu(
             .e0_button(button_up),
@@ -98,20 +93,22 @@ module game_datapath#(
             b00 : game_regfiles.data = alu.out
             b01 : game_regfiles.data = 4
             b10 : game_regfiles.data = 1
-            b11 : game_regfiles.data = generator.out
+            b11 : game_regfiles.data = b1110110100101101
+            b100 : game_regfiles.data = 0
             default : 
                 game_regfiles.data = alu.out
         }
         
   
         // display on 7 seg
-        countdown_out = game_regfiles.countdown_out
-        stage_out = game_regfiles.stage_out
+        //countdown_out = game_regfiles.countdown_out
+        //stage_out = game_regfiles.stage_out
         current_seq = game_regfiles.light_out
         
         // debug
         debug_seg = game_cu.debug_counter
         //debug_seg = game_regfiles.mod_sequence_out
-        debug_ioled = game_regfiles.score_out
+        debug_ioled = game_regfiles.stage_out
+        debug_ioled2 = game_regfiles.score_out
         }
 }

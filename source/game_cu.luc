@@ -13,7 +13,7 @@ module game_cu (
     output alufn[6],
     output asel[3],
     output bsel[3],
-    output alu_out_sel[2],
+    output alu_out_sel[4],
     output regfile_wa[4],
     output regfile_ra1[4],
     output regfile_ra2[4],
@@ -260,11 +260,11 @@ module game_cu (
                     }
                 
                 // correct
-                GameStates.PR_RESET_SEQ_ORD: // assign 1 to the seq order register
+                GameStates.PR_RESET_SEQ_ORD: // assign 0 to the seq order register
                     debug_counter = 12
                     regfile_we = 1
                     regfile_wa = d7     // seq order reg
-                    alu_out_sel = b10
+                    alu_out_sel = b100
                     game_fsm.d = GameStates.PR_ASSIGN_TEMP_SEQ
                 
                 // correct 
@@ -440,11 +440,11 @@ module game_cu (
                     game_fsm.d = GameStates.FR_RESET_SEQ_ORD
                 
                 // correct
-                GameStates.FR_RESET_SEQ_ORD:    // assign 1 to seq ord reg
+                GameStates.FR_RESET_SEQ_ORD:    // assign 0 to seq ord reg
                     debug_counter = 23
                     regfile_we = 1
                     regfile_wa = d7     // lights reg
-                    alu_out_sel = b10
+                    alu_out_sel = b100
                     game_fsm.d = GameStates.FR_INCREASE_SCORE_1
                 
                 // correct
@@ -488,7 +488,7 @@ module game_cu (
                     else if (e2_button && ~e0_button && ~e1_button && ~e3_button){ // only down button is pressed
                         game_fsm.d = GameStates.CHECK_ELEMENT_2
                     }
-                    else if (e3_button && ~e0_button && ~e1_button && e2_button){ // only left button is pressed
+                    else if (e3_button && ~e0_button && ~e1_button && ~e2_button){ // only left button is pressed
                         game_fsm.d = GameStates.CHECK_ELEMENT_3
                     }
                     else{
