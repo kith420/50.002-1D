@@ -22,6 +22,16 @@ module game_cu (
     // debug
     output debug_counter[32]
 ) {
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 8 : 28 // put 8  for sim, 28 for hardware
+    sig slow_clock
+    
+    .clk(clk){
+        edge_detector slow_clock_edge(#RISE(1), #FALL(0))
+        .rst(rst){
+            dff slow_clock_counter[32]
+            dff speed_pointer[$clog2(32)](#INIT(SLOW_CLOCK_DEFAULT_SPEED))
+        }
+    }
     
     enum GameStates {
         GENERATE_SEQUENCE,
@@ -74,11 +84,16 @@ module game_cu (
     }
     
     dff game_fsm[$width(GameStates)](#INIT(GameStates.IDLE), .clk(clk), .rst(rst))
-
+    
     always {
         // debug
         debug_counter = 0
-                
+        
+        slow_clock_counter.d = slow_clock_counter.q + 1
+        speed_pointer.d = speed_pointer.q  // Controls speed of clock/counting
+        slow_clock = slow_clock_counter.q[speed_pointer.q]
+        slow_clock_edge.in =  slow_clock
+        
         // standard setting unless otherwise overwritten by each case 
         alufn = 0
         asel = 0 
@@ -102,7 +117,7 @@ module game_cu (
                     alu_out_sel = b11 
                     game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
                     debug_counter = 1
-                    //game_fsm.d = GameStates.IDLE        
+                //game_fsm.d = GameStates.IDLE        
                 
                 // correct
                 GameStates.SG_ASSIGN_STAGE_1: // give the stage dff a value of 1
@@ -209,11 +224,14 @@ module game_cu (
                 
                 // correct
                 GameStates.DS_DEACTIVATE_LIGHT: // rewrite the lights reg to have value of 0 (turn off the lights)
-                    debug_counter = 8
-                    regfile_we = 1
-                    regfile_wa = d8     // lights reg
-                    alu_out_sel = b100
-                    game_fsm.d = GameStates.DS_SHR_TEMPR 
+                    if (slow_clock_edge.out){
+                        debug_counter = 8
+                        regfile_we = 1
+                        regfile_wa = d8     // lights reg
+                        alu_out_sel = b100
+                        game_fsm.d = GameStates.DS_SHR_TEMPR  
+                    }
+                
                 
                 // correct
                 GameStates.DS_SHR_TEMPR: // delete last 2 bits of the temp sequence 
@@ -350,8 +368,8 @@ module game_cu (
                     regfile_we = 1
                     regfile_wa = d5     // check reg
                     game_fsm.d = GameStates.BRANCH_ELEMENT_BUTTON
-               
-                 // correct
+                
+                // correct
                 GameStates.CHECK_ELEMENT_1:    // player presses button zero, check if sequence now is = 1
                     debug_counter = 17 
                     alufn = h33 //CMPEQ
