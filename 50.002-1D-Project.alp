@@ -207,6 +207,20 @@
         "constraintFiles": [
             {
                 "file": {
+                    "type": "DiskFile",
+                    "path": "source/random_number_generator.luc"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/pn_gen.luc"
+                }
+            }
+        ],
+        "constraintFiles": [
+            {
+                "file": {
                     "type": "Component",
                     "path": "Constraints/io_v1_pulldown.acf"
                 }

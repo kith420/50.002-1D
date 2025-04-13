@@ -1,5 +1,5 @@
 module game_datapath#(
-    SLOW_CLOCK_DIV ~ 26 : SLOW_CLOCK_DIV > 0
+    SLOW_CLOCK_DIV ~ 28 : SLOW_CLOCK_DIV > 0
 ) (
     input button_up,
     input button_down,
@@ -21,6 +21,7 @@ module game_datapath#(
     sig input_alu_a[32]
     sig input_alu_b[32]
     
+    //alu alu
     alu alu
     
     const CLOCK_DIVIDER = $is_sim() ? 11 : 26
@@ -94,6 +95,7 @@ module game_datapath#(
             b01 : game_regfiles.data = 0
             b10 : game_regfiles.data = 1
             b11 : game_regfiles.data = generator.out
+            b100 : game_regfiles.data = 0
             default : 
                 game_regfiles.data = alu.out
         }
