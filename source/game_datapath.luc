@@ -26,14 +26,20 @@ module game_datapath#(
     sig input_alu_a[32]
     sig input_alu_b[32]
     
+    //alu alu
     alu alu
-    //alu_sample alu
+    
+    const CLOCK_DIVIDER = $is_sim() ? 11 : 26
     
     .clk(clk){
         counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
+        .rst(rst){
+             counter slow_clk(#SIZE(1), #DIV(CLOCK_DIVIDER))
+        }
         
         // edge detector declaration & connection with counters
         edge_detector edge_detector_game_timer(#RISE(1), #FALL(0), .in(game_timer_clock.value))
+        random_number_generator generator(.slow_clk(slow_clk.value))
         
         game_cu game_cu(
             .e0_button(button_up),
@@ -93,7 +99,8 @@ module game_datapath#(
             b00 : game_regfiles.data = alu.out
             b01 : game_regfiles.data = 4
             b10 : game_regfiles.data = 1
-            b11 : game_regfiles.data = b1110110100101101
+            b11 : game_regfiles.data = generator.out
+            //b11 : game_regfiles.data = b1110110100101101
             b100 : game_regfiles.data = 0
             default : 
                 game_regfiles.data = alu.out

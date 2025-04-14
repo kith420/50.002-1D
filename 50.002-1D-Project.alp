@@ -20,18 +20,6 @@
             {
                 "file": {
                     "type": "DiskFile",
-                    "path": "source/decimal_counter.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/multi_decimal_counter.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
                     "path": "source/multi_seven_seg.luc"
                 }
             },
@@ -177,6 +165,18 @@
                 "file": {
                     "type": "DiskFile",
                     "path": "source/adder.luc"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/pn_gen.luc"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/random_number_generator.luc"
                 }
             }
         ],

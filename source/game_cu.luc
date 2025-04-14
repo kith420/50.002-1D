@@ -83,7 +83,7 @@ module game_cu (
         FR_INCREASE_STAGE_1
     }
     
-    dff game_fsm[$width(GameStates)](#INIT(GameStates.IDLE), .clk(clk), .rst(rst))
+    dff game_fsm[$width(GameStates)](#INIT(GameStates.GENERATE_SEQUENCE), .clk(clk), .rst(rst))
     
     always {
         // debug
@@ -106,7 +106,8 @@ module game_cu (
         
         game_fsm.d = game_fsm.q     
         if (rst){
-            game_fsm.d = GameStates.IDLE
+            //game_fsm.d = GameStates.IDLE
+            game_fsm.d = GameStates.GENERATE_SEQUENCE
         }
         else{       
             case(game_fsm.q){
@@ -326,6 +327,7 @@ module game_cu (
                     bsel = b00                              //constant 0
                     regfile_we = 1
                     regfile_wa = d5                 //check reg
+                    debug_counter = 66
                     game_fsm.d = GameStates.BRANCH_GAMETIMER
                 
                 GameStates.BRANCH_GAMETIMER:      // branch check above
@@ -491,13 +493,13 @@ module game_cu (
                     game_fsm.d = GameStates.GAMEOVER
                 
                 GameStates.IDLE:
-                    if (e4_button){    // if middle button is pressed, commence beginning of fsm
-                        game_fsm.d = GameStates.GENERATE_SEQUENCE
+                    if (decrease_timer){    // if middle button is pressed, commence beginning of fsm
+                        //    game_fsm.d = GameStates.GENERATE_SEQUENCE
+                        //}
+                        //else if (decrease_timer){    
+                        game_fsm.d = GameStates.CHECK_GAMETIMER
                     }
-                    //else if (decrease_timer){    
-                    //    game_fsm.d = GameStates.CHECK_GAMETIMER
-                    //}
-                    else if (e0_button && ~e1_button && ~e2_button && ~e3_button){ // only up button is pressed
+                    if (e0_button && ~e1_button && ~e2_button && ~e3_button){ // only up button is pressed
                         game_fsm.d = GameStates.CHECK_ELEMENT_0
                     }
                     else if (e1_button && ~e2_button && ~e3_button && ~e0_button){ // only right button is pressed
@@ -510,7 +512,7 @@ module game_cu (
                         game_fsm.d = GameStates.CHECK_ELEMENT_3
                     }
                     else{
-                        game_fsm.d = GameStates.IDLE
+                        //game_fsm.d = GameStates.IDLE
                     }
                 
             }

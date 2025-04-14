@@ -93,14 +93,14 @@ module alchitry_top (
         
         ext_seg_dec.char = game_datapath.countdown_out[0];
         ext_segment = ~ext_seg_dec.segs;
-        ext_select = b0
+        ext_select = ~b0001
         ext_seg_dec2.char = game_datapath.stage_out[0];
         ext_segment2 = ~ext_seg_dec2.segs;
-        ext_select2 = b0
+        ext_select2 = ~b0001
         
         // debug
         io_led[1] = game_datapath.debug_ioled
-        io_led[2] = game_datapath.debug_ioled2
+        io_led[2] = game_datapath.countdown_out
         //io_led[2] = game_datapath.debug_ioled[15:8]
         
     }
