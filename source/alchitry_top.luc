@@ -8,10 +8,10 @@ module alchitry_top (
     output io_led[3][8],    // LEDs on IO Shield
     output io_segment[8],   // 7-segment LEDs on IO Shield
     output io_select[4],    // Digit select on IO Shield
-    output ext_segment[8],
-    output ext_select[1],
-    output ext_segment2[8],
-    output ext_select2[1],
+    output ext_segment[8],  // Countdown Segment
+    output ext_select[1],   // Countdown Seven Seg Sel
+    output ext_segment2[8], // Score Segment
+    output ext_select2[1],  // Score Seven Seg Sel
     input io_button[5]     // 5 buttons on IO Shield
 ) {
     
@@ -19,7 +19,6 @@ module alchitry_top (
     const CLK_FREQ = $is_sim() ? 1000 : 100000000 // put 1000 for sim, 100M for hardware 
     const SEVEN_SEG_DIV = $is_sim() ? 3 : 16 // put 3 for sim, 16 for hardware
     const SLOW_CLOCK_DIV = $is_sim() ? 9 : 26 // put 9 for sim, 26 for hardware 
-    // const FAST_CLOCK_DIV = $is_sim() ? 7 : 21 // put 7 for sim, 21 for hardware 
     
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
@@ -45,8 +44,11 @@ module alchitry_top (
     }
     
     bin_to_dec bin_to_dec_converter(#DIGITS(4))
+    bin_to_dec bin_to_dec_countdown(#DIGITS(4))
+    bin_to_dec bin_to_dec_score(#DIGITS(4))
     seven_seg ext_seg_dec;
     seven_seg ext_seg_dec2
+    seven_seg seg_dec;
     
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
@@ -81,27 +83,30 @@ module alchitry_top (
         io_led[0] = game_datapath.current_seq
 
         //update 7segments. 
-        // THIS IS NOT COMPLETE
         seg.values = 4x{{4b0}} // default to all 0 first
-        //bin_to_dec_converter.value = game_datapath.countdown_out
         bin_to_dec_converter.value = game_datapath.debug_seg
         seg.values = bin_to_dec_converter.digits
         
-        // assign ioled to button light 
-        io_segment = ~seg.seg
-        io_select = ~seg.sel
+        bin_to_dec_countdown.value = game_datapath.countdown_out
+        bin_to_dec_score.value = game_datapath.score_out
         
-        ext_seg_dec.char = game_datapath.countdown_out[0];
+        seg_dec.char = bin_to_dec_score.digits[0];
+        
+        // assign ioled to button light 
+        io_segment = ~seg_dec.segs
+        io_select = ~b0001
+        
+        ext_seg_dec.char = bin_to_dec_countdown.digits[0];
         ext_segment = ~ext_seg_dec.segs;
         ext_select = ~b0001
-        ext_seg_dec2.char = game_datapath.stage_out[0];
+        ext_seg_dec2.char = bin_to_dec_score.digits[0];
         ext_segment2 = ~ext_seg_dec2.segs;
         ext_select2 = ~b0001
         
         // debug
         io_led[1] = game_datapath.debug_ioled
         io_led[2] = game_datapath.countdown_out
-        //io_led[2] = game_datapath.debug_ioled[15:8]
+        
         
     }
 }

@@ -1,14 +1,13 @@
 module game_cu (
     input clk,  // clock
     input rst,  // reset
-    input decrease_timer,
+    input decrease_timer, // indication of counting down
     input regfile_rd2[32], //direct reading of regfile data from rd2
     
     input e0_button,
     input e1_button,
     input e2_button,
     input e3_button,
-    input e4_button,
     
     output alufn[6],
     output asel[3],
@@ -22,7 +21,7 @@ module game_cu (
     // debug
     output debug_counter[32]
 ) {
-    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 8 : 24 // put 8  for sim, 28 for hardware
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 8 : 23 // put 8  for sim, 28 for hardware
     sig slow_clock
     
     .clk(clk){
@@ -44,6 +43,7 @@ module game_cu (
         CHECK_STAGE8,
         BRANCH_CHECK8,
         PLAYER_WINS,
+        END_DISPLAY_WIN,
         
         DS_ASSIGN_TEMPR,
         DS_ASSIGN_E_R4,
@@ -60,6 +60,7 @@ module game_cu (
         START_SET_TIMER,
         IDLE,
         GAMEOVER,
+        END_DISPLAY_OVER,
         
         DECREASE_GAMETIMER,
         CHECK_GAMETIMER,
@@ -83,7 +84,7 @@ module game_cu (
         FR_INCREASE_STAGE_1
     }
     
-    dff game_fsm[$width(GameStates)](#INIT(GameStates.GENERATE_SEQUENCE), .clk(clk), .rst(rst))
+    dff game_fsm[$width(GameStates)](#INIT(GameStates.SG_ASSIGN_STAGE_1), .clk(clk), .rst(rst))
     
     always {
         // debug
@@ -107,7 +108,7 @@ module game_cu (
         game_fsm.d = game_fsm.q     
         if (rst){
             //game_fsm.d = GameStates.IDLE
-            game_fsm.d = GameStates.GENERATE_SEQUENCE
+            game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
         }
         else{       
             case(game_fsm.q){
@@ -116,7 +117,7 @@ module game_cu (
                     regfile_we = 1
                     regfile_wa = d2     // sequence reg
                     alu_out_sel = b11 
-                    game_fsm.d = GameStates.SG_ASSIGN_STAGE_1
+                    game_fsm.d = GameStates.CHECK_STAGE4
                     debug_counter = 1
                 //game_fsm.d = GameStates.IDLE        
                 
@@ -134,7 +135,7 @@ module game_cu (
                     regfile_wa = d6     // timer reg
                     alu_out_sel = b01
                     debug_counter = 3
-                    game_fsm.d = GameStates.CHECK_STAGE4
+                    game_fsm.d = GameStates.GENERATE_SEQUENCE
                 
                 // correct
                 GameStates.CHECK_STAGE4: // check if your stage is equal to 4
@@ -214,14 +215,17 @@ module game_cu (
                 
                 // correct
                 GameStates.DS_ACTIVATE_LIGHT: // rewrite the lights reg to have value of 2^(button pressed) (turn on the lights)
-                    debug_counter = 7
-                    alufn = h20     // SHL
-                    regfile_ra2 = d4    // mod sequence reg
-                    asel = b10
-                    bsel = b00
-                    regfile_we = 1
-                    regfile_wa = d8     // lights reg
-                    game_fsm.d = GameStates.DS_DEACTIVATE_LIGHT
+                    
+                    if (slow_clock_edge.out){
+                        debug_counter = 7
+                        alufn = h20     // SHL
+                        regfile_ra2 = d4    // mod sequence reg
+                        asel = b10
+                        bsel = b00
+                        regfile_we = 1
+                        regfile_wa = d8     // lights reg
+                        game_fsm.d = GameStates.DS_DEACTIVATE_LIGHT
+                    }
                 
                 // correct
                 GameStates.DS_DEACTIVATE_LIGHT: // rewrite the lights reg to have value of 0 (turn off the lights)
@@ -243,7 +247,9 @@ module game_cu (
                     bsel = b11
                     regfile_we = 1
                     regfile_wa = d3     // mod sequence reg
-                    game_fsm.d = GameStates.DS_INCREASE_SEQ_ORDER
+                    game_fsm.d = GameStates.DS_INCREASE_SEQ_ORDER 
+                
+                
                 
                 // correct
                 GameStates.DS_INCREASE_SEQ_ORDER: // increase seq order reg by 1
@@ -486,17 +492,35 @@ module game_cu (
                     bsel = b10
                     regfile_wa = d1
                     regfile_we = 1
-                    game_fsm.d = GameStates.CHECK_STAGE4
+                    game_fsm.d = GameStates.GENERATE_SEQUENCE
                 
                 GameStates.GAMEOVER:    // self explanatory
                     debug_counter = 88
+                    alu_out_sel = b01
+                    regfile_wa = d9
+                    regfile_we = 1
+                    game_fsm.d = GameStates.END_DISPLAY_OVER
+                
+                GameStates.END_DISPLAY_OVER:
+                    alu_out_sel = b01
+                    regfile_wa = d0
+                    regfile_we = 1
                     game_fsm.d = GameStates.GAMEOVER
                 
+                GameStates.PLAYER_WINS:
+                    alu_out_sel = b101
+                    regfile_wa = d9
+                    regfile_we = 1
+                    game_fsm.d = GameStates.END_DISPLAY_WIN
+                
+                GameStates.END_DISPLAY_WIN:
+                    alu_out_sel = b101
+                    regfile_wa = d0
+                    regfile_we = 1
+                    game_fsm.d = GameStates.PLAYER_WINS
+                
                 GameStates.IDLE:
-                    if (decrease_timer){    // if middle button is pressed, commence beginning of fsm
-                        //    game_fsm.d = GameStates.GENERATE_SEQUENCE
-                        //}
-                        //else if (decrease_timer){    
+                    if (decrease_timer){    
                         game_fsm.d = GameStates.CHECK_GAMETIMER
                     }
                     if (e0_button && ~e1_button && ~e2_button && ~e3_button){ // only up button is pressed
@@ -511,10 +535,6 @@ module game_cu (
                     else if (e3_button && ~e0_button && ~e1_button && ~e2_button){ // only left button is pressed
                         game_fsm.d = GameStates.CHECK_ELEMENT_3
                     }
-                    else{
-                        //game_fsm.d = GameStates.IDLE
-                    }
-                
             }
         }
         

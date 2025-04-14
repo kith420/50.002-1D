@@ -13,6 +13,7 @@ module game_datapath#(
     // display on 7 seg
     output countdown_out[4],
     output stage_out[4],  
+    output score_out[4],
     
     // display on io_led (button)
     output current_seq[4],
@@ -46,7 +47,6 @@ module game_datapath#(
             .e1_button(button_right),
             .e2_button(button_down),
             .e3_button(button_left),
-            .e4_button(button_middle),
             .rst(rst),
             .decrease_timer(edge_detector_game_timer.out)
         )
@@ -100,8 +100,8 @@ module game_datapath#(
             b01 : game_regfiles.data = 4
             b10 : game_regfiles.data = 1
             b11 : game_regfiles.data = generator.out
-            //b11 : game_regfiles.data = b1110110100101101
             b100 : game_regfiles.data = 0
+            b101 : game_regfiles.data = 8
             default : 
                 game_regfiles.data = alu.out
         }
@@ -111,6 +111,8 @@ module game_datapath#(
         countdown_out = game_regfiles.countdown_out
         stage_out = game_regfiles.stage_out
         current_seq = game_regfiles.light_out
+        score_out = game_regfiles.score_out
+        
         
         // debug
         debug_seg = game_cu.debug_counter
