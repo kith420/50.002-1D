@@ -76,7 +76,7 @@ PINOUT(V1), STANDARD(LVCMOS33) {
     pin ext_segment[0] C48     
     pin ext_segment[1] C2     
     pin ext_segment[2] C3     
-    pin ext_segment[3] C46      
+    pin ext_segment[3] C36      
     pin ext_segment[4] C45      
     pin ext_segment[5] C5     
     pin ext_segment[6] C6     
