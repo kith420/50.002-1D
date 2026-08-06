@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Alchitry Labs / Vivado build output
+work/
+build/
+*.jou
+*.log
+*.str
+*.bit
+*.bin
+.Xil/
+vivado*.backup.jou
+vivado*.backup.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
