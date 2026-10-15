@@ -37,6 +37,10 @@ your score, which is displayed live on the seven-segment display.
 </p>
 <p align="center"><i>CAD render of the arcade cabinet (left) and the built physical prototype (right)</i></p>
 
+https://github.com/user-attachments/assets/70fbde3a-85fc-4dbe-83ab-5d218d40d0aa
+
+<p align="center"><i>How a round works: one random number, sliced into moves, then played</i></p>
+
 ---
 
 ## 🏗 How It Works
